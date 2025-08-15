@@ -73,7 +73,7 @@
               id="ink"
               type="range"
               min="0"
-              max="100"
+              max="50"
               value="8"
               title="Protects dark pixels (like outlines) from being recolored. Higher values protect more pixels."
             /><span id="inkVal">8</span> <label>Smoothing</label
@@ -112,14 +112,6 @@
           </div>
           <hr />
           <div class="row">
-            <label class="toggle"
-              ><input
-                id="editProtected"
-                type="checkbox"
-                title="Allow editing of protected pixels (like outlines) in the selected region."
-              />
-              Edit protected pixels (selected region)</label
-            >
             <label class="toggle"
               ><input
                 id="showDebug"
@@ -209,16 +201,13 @@
               Zoom Mode
             </button>
           </div>
-          <div id="status">Idle</div>
         </div>
 
         <div class="preview">
           <div class="canvasWrap">
             <fieldset>
               <legend>Original</legend>
-              <canvas
-                id="c0"
-              ></canvas>
+              <canvas id="c0"></canvas>
               <div class="row">
                 <select
                   id="sourceSel"
@@ -260,9 +249,7 @@
           <div class="canvasWrap">
             <fieldset>
               <legend>Shiny</legend>
-              <canvas
-                id="c1"
-              ></canvas>
+              <canvas id="c1"></canvas>
             </fieldset>
             <canvas id="cGuide" style="display: none"></canvas>
             <canvas id="dbg1" class="debugOverlay"></canvas>
@@ -292,6 +279,8 @@
             </div>
           </div>
         </div>
+        
+        <div id="status">Idle</div>
       </div>
       <div class="card">
         <fieldset>
@@ -336,13 +325,6 @@
                   type="checkbox"
                   title="Keep the original colors for this region unchanged."
                 /><span>Keep original</span></span
-              >
-              <span class="pill"
-                ><input
-                  id="sheetLock"
-                  type="checkbox"
-                  title="Lock this region to prevent accidental changes."
-                /><span>Lock</span></span
               >
               <button
                 id="sheetRevert"
@@ -563,13 +545,6 @@
               type="text"
               placeholder="o"
               title="Hotkey to toggle the selected region outline."
-            />
-            <label>Toggle Edit-Protected</label
-            ><input
-              id="hkEditProt"
-              type="text"
-              placeholder="e"
-              title="Hotkey to toggle editing of protected pixels."
             />
             <label>Pick from Preview</label
             ><input

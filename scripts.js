@@ -695,8 +695,7 @@ let regions = [],
   regionIds = null,
   famToRegions = [],
   selectedRegion = -1;
-let forceEditProtected = false,
-  regionDark = {},
+let regionDark = {},
   pickMode = null,
   pickedColorForApply = null; // New state for pick & apply mode
 let contrastFactor = 1.1; // 110%
@@ -747,11 +746,6 @@ $("#colorConsensus").oninput = (e) => {
   if (sprite && pixLabs) {
     computeFamiliesAndRegions();
   }
-};
-$("#editProtected").onchange = (e) => {
-  forceEditProtected = e.target.checked;
-  applyShiny();
-  drawDebug();
 };
 $("#showDebug").onchange = (e) => {
   drawDebug();
@@ -1254,7 +1248,7 @@ function computeFamiliesAndRegions() {
   const pts = [],
     idxs = [];
   for (let p = 0; p < pixLabs.length; p++) {
-    if (pixMask[p] === 1 || (forceEditProtected && pixMask[p] === 2)) {
+    if (pixMask[p] === 1) {
       const x = p % width,
         y = (p / width) | 0,
         L = pixLabs[p][0],
@@ -1334,8 +1328,7 @@ function computeFamiliesAndRegions() {
   for (let y = 0; y < height; y++)
     for (let x = 0; x < width; x++) {
       const p = y * width + x;
-      if (!(pixMask[p] === 1 || (forceEditProtected && pixMask[p] === 2)))
-        continue;
+      if (pixMask[p] !== 1) continue;
       if (regionIds[p] !== -1) continue;
       const fam = assignFam[p];
       if (fam < 0) continue;
@@ -1358,8 +1351,7 @@ function computeFamiliesAndRegions() {
         for (const [nx, ny] of nb) {
           if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
           const np = ny * width + nx;
-          if (!(pixMask[np] === 1 || (forceEditProtected && pixMask[np] === 2)))
-            continue;
+          if (pixMask[np] !== 1) continue;
           if (regionIds[np] !== -1) continue;
           if (assignFam[np] !== fam) continue;
           regionIds[np] = rid;
@@ -1373,7 +1365,6 @@ function computeFamiliesAndRegions() {
         fam,
         linked: true,
         keep: false,
-        lock: false,
         lab: null,
       });
       famToRegions[fam].push(rid);
@@ -1412,7 +1403,6 @@ function openSheet(rid) {
   $("#sheetTitle").textContent = `Region #${rid} (Family #${fam + 1})`;
   $("#sheetLink").checked = R.linked;
   $("#sheetKeep").checked = R.keep;
-  $("#sheetLock").checked = R.lock;
   const lab = R.linked || !R.lab ? famShinyLab[fam] : R.lab;
   const col = labToHex(lab);
   $("#sheetColor").value = col;
@@ -1474,11 +1464,6 @@ $("#sheetKeep").onchange = (e) => {
   if (!R || R.deleted) return;
   R.keep = e.target.checked;
   applyShiny();
-};
-$("#sheetLock").onchange = (e) => {
-  const R = regions[selectedRegion];
-  if (!R || R.deleted) return;
-  R.lock = e.target.checked;
 };
 $("#sheetColor").oninput = (e) => {
   const rid = selectedRegion;
@@ -1584,7 +1569,7 @@ $("#c1").onclick = (e) => {
       .getContext("2d", { willReadFrequently: true })
       .getImageData(x, y, 1, 1).data;
     const R = regions[selectedRegion];
-    if (R && !R.lock && !R.keep) {
+    if (R && !R.keep) {
       const lab = rgbToLab(d[0], d[1], d[2]);
       if (R.linked) famShinyLab[R.fam] = lab;
       else R.lab = lab;
@@ -1607,7 +1592,7 @@ $("#c1").onclick = (e) => {
     const rid = regionAtCanvas($("#c1"), e.clientX, e.clientY);
     if (rid >= 0) {
       const R = regions[rid];
-      if (R && !R.lock && !R.keep) {
+      if (R && !R.keep) {
         const isPixelLevelMode =
           document.getElementById("pixelLevelMode").checked;
 
@@ -1623,7 +1608,6 @@ $("#c1").onclick = (e) => {
             originalFam: originalFam, // Store original family for re-linking
             linked: false,
             keep: false,
-            lock: false,
             lab: pickedColorForApply.slice(),
             isPixelRegion: true, // Mark as pixel-level region
           };
@@ -1784,7 +1768,7 @@ function openTexOverlayWithObj(obj) {
       .getContext("2d", { willReadFrequently: true })
       .getImageData(xx, yy, 1, 1).data;
     const R = regions[selectedRegion];
-    if (R && !R.lock && !R.keep) {
+    if (R && !R.keep) {
       const lab = rgbToLab(d[0], d[1], d[2]);
       if (R.linked) famShinyLab[R.fam] = lab;
       else R.lab = lab;
@@ -2140,10 +2124,8 @@ function drawDebug() {
   if (showProtected && pixMask) {
     for (let p = 0, i = 0; p < pixMask.length; p++, i += 4) {
       if (pixMask[p] !== 2) continue;
-      const editable =
-        $("#editProtected").checked && regionIds && regionIds[p] === activeRid;
-      const R = editable ? 60 : 220,
-        G = editable ? 220 : 60,
+      const R = 220,
+        G = 60,
         B = 60,
         AA = 110;
       A0[i] = R;
@@ -2199,8 +2181,7 @@ function applyShiny() {
       b = pixRGB[i + 2],
       a = pixRGB[i + 3];
     const rid = regionIds ? regionIds[p] : -1;
-    const allow = $("#editProtected").checked && rid === activeRid;
-    if (pixMask[p] === 2 && !allow) {
+    if (pixMask[p] === 2) {
       D[i] = r;
       D[i + 1] = g;
       D[i + 2] = b;
@@ -2397,7 +2378,6 @@ const HK_DEFAULT = {
   save: "s",
   recluster: "r",
   debug: "d",
-  editProt: "e",
   outline: "o",
   pickPrev: "p",
   pickTex: "t",
@@ -2471,13 +2451,6 @@ function applyHKBindings() {
       e.preventDefault();
       $("#showRegionOutline").checked = !$("#showRegionOutline").checked;
       showRegionOutline = $("#showRegionOutline").checked;
-      drawDebug();
-      return;
-    }
-    if (k === HK.editProt) {
-      e.preventDefault();
-      $("#editProtected").checked = !$("#editProtected").checked;
-      applyShiny();
       drawDebug();
       return;
     }
@@ -2570,7 +2543,6 @@ function openHotkeyModal() {
   keyCaptureInput($("#hkRecluster"), "recluster");
   keyCaptureInput($("#hkDebug"), "debug");
   keyCaptureInput($("#hkOutline"), "outline");
-  keyCaptureInput($("#hkEditProt"), "editProt");
   keyCaptureInput($("#hkPickPrev"), "pickPrev");
   keyCaptureInput($("#hkPickTex"), "pickTex");
   keyCaptureInput($("#hkPickApply"), "pickApply");
