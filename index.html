@@ -14,7 +14,11 @@
           <legend>Pokémon</legend>
           <div class="kv kv-onecol">
             <div class="row" style="gap: 4px">
-              <select id="folderSel" style="flex: 1">
+              <select
+                id="folderSel"
+                style="flex: 1"
+                title="Select a Pokémon folder to work with"
+              >
                 <option value="">(pick root)</option>
               </select>
               <button
@@ -47,10 +51,14 @@
           <legend>Settings</legend>
           <div class="kv">
             <label>Family Count</label
-            ><input id="k" type="range" min="5" max="48" value="32" /><span
-              id="kVal"
-              >32</span
-            >
+            ><input
+              id="k"
+              type="range"
+              min="5"
+              max="48"
+              value="32"
+              title="Number of color families to group similar colors together. Higher values create more distinct color regions."
+            /><span id="kVal">32</span>
             <label class="mut" style="display: none">Spatial weight</label
             ><input
               id="spw"
@@ -61,22 +69,29 @@
               value="60"
             /><span id="spwVal" style="display: none">0.60</span>
             <label>Protect Outline</label
-            ><input id="ink" type="range" min="0" max="48" value="8" /><span
-              id="inkVal"
-              >8</span
-            >
-            <label>Smoothing</label
-            ><input id="smoothPx" type="range" min="0" max="5" value="1" /><span
-              id="smoothPxVal"
-              >1</span
-            >
-            <label>Blending</label
+            ><input
+              id="ink"
+              type="range"
+              min="0"
+              max="100"
+              value="8"
+              title="Protects dark pixels (like outlines) from being recolored. Higher values protect more pixels."
+            /><span id="inkVal">8</span> <label>Smoothing</label
+            ><input
+              id="smoothPx"
+              type="range"
+              min="0"
+              max="5"
+              value="1"
+              title="Applies smoothing to reduce noise and artifacts. Higher values create smoother transitions."
+            /><span id="smoothPxVal">1</span> <label>Blending</label
             ><input
               id="smoothAmt"
               type="range"
               min="0"
               max="100"
               value="45"
+              title="Controls how much smoothing is applied. Higher values create more blended colors."
             /><span id="smoothAmtVal">45%</span> <label>Contrast</label
             ><input
               id="contrast"
@@ -84,6 +99,7 @@
               min="50"
               max="170"
               value="110"
+              title="Adjusts the contrast of the final shiny sprite. Higher values increase contrast."
             /><span id="contrastVal">110%</span> <label>Color Consensus</label
             ><input
               id="colorConsensus"
@@ -97,18 +113,36 @@
           <hr />
           <div class="row">
             <label class="toggle"
-              ><input id="editProtected" type="checkbox" /> Edit protected
-              pixels (selected region)</label
+              ><input
+                id="editProtected"
+                type="checkbox"
+                title="Allow editing of protected pixels (like outlines) in the selected region."
+              />
+              Edit protected pixels (selected region)</label
             >
             <label class="toggle"
-              ><input id="showDebug" type="checkbox" /> Show protected
-              overlay</label
+              ><input
+                id="showDebug"
+                type="checkbox"
+                title="Shows an overlay highlighting protected pixels that won't be recolored."
+              />
+              Show protected overlay</label
             >
             <label class="toggle"
-              ><input id="showRegionOutline" type="checkbox" /> Show selected
-              region outline</label
+              ><input
+                id="showRegionOutline"
+                type="checkbox"
+                title="Shows an outline around the currently selected color region."
+              />
+              Show selected region outline</label
             >
-            <button id="recluster" class="btn gray">Recluster</button>
+            <button
+              id="recluster"
+              class="btn gray"
+              title="Recalculates color families and regions with current settings. Use after changing Family Count or other clustering parameters."
+            >
+              Recluster
+            </button>
             <div class="row" style="gap: 4px; margin-top: 8px">
               <label style="font-size: 12px; color: #888">Seed:</label>
               <span
@@ -130,6 +164,7 @@
                 type="text"
                 placeholder="Enter seed"
                 style="flex: 1; font-size: 12px"
+                title="Enter a seed value to reproduce specific clustering results. Leave empty for random clustering."
               />
             </div>
           </div>
@@ -149,11 +184,30 @@
                 webkitdirectory
                 multiple
                 accept="image/*"
+                title="Select the root folder containing Pokémon texture files to work with."
               />Pick Root Folder</label
             >
-            <button id="saveBtn" class="btn gray">Save PNG</button>
-            <button id="hotkeyBtn" class="btn gray">Hotkeys</button>
-            <button id="zoomToggle" class="btn gray">Zoom Mode</button>
+            <button
+              id="saveBtn"
+              class="btn gray"
+              title="Save the current shiny sprite as a PNG file."
+            >
+              Save PNG
+            </button>
+            <button
+              id="hotkeyBtn"
+              class="btn gray"
+              title="Open the hotkey configuration menu to customize keyboard shortcuts."
+            >
+              Hotkeys
+            </button>
+            <button
+              id="zoomToggle"
+              class="btn gray"
+              title="Toggle zoom mode to see magnified view when hovering over sprites."
+            >
+              Zoom Mode
+            </button>
           </div>
           <div id="status">Idle</div>
         </div>
@@ -162,9 +216,15 @@
           <div class="canvasWrap">
             <fieldset>
               <legend>Original</legend>
-              <canvas id="c0"></canvas>
+              <canvas
+                id="c0"
+              ></canvas>
               <div class="row">
-                <select id="sourceSel" class="btn gray">
+                <select
+                  id="sourceSel"
+                  class="btn gray"
+                  title="Choose which texture or sprite to display in the Original canvas."
+                >
                   <option value="">
                     (choose source image: textures & sprites)
                   </option>
@@ -200,7 +260,9 @@
           <div class="canvasWrap">
             <fieldset>
               <legend>Shiny</legend>
-              <canvas id="c1"></canvas>
+              <canvas
+                id="c1"
+              ></canvas>
             </fieldset>
             <canvas id="cGuide" style="display: none"></canvas>
             <canvas id="dbg1" class="debugOverlay"></canvas>
@@ -247,29 +309,48 @@
                 background: #000;
                 margin-left: 8px;
               "
+              title="Shows the current color of the selected region."
             ></span>
           </div>
           <div class="section">
             <div class="row" style="gap: 8px; flex-wrap: wrap">
               <span class="pill"
-                ><input id="sheetColor" type="color" value="#000000" /><span
-                  >Manual color</span
-                ></span
+                ><input
+                  id="sheetColor"
+                  type="color"
+                  value="#000000"
+                  title="Manually set the color for the selected region."
+                /><span>Manual color</span></span
               >
               <span class="pill"
-                ><input id="sheetLink" type="checkbox" checked /><span
-                  >Link to family (clears individual pixels)</span
-                ></span
+                ><input
+                  id="sheetLink"
+                  type="checkbox"
+                  checked
+                  title="Link this region to its color family. When linked, individual pixel edits are cleared and the family color is used."
+                /><span>Link to family (clears individual pixels)</span></span
               >
               <span class="pill"
-                ><input id="sheetKeep" type="checkbox" /><span
-                  >Keep original</span
-                ></span
+                ><input
+                  id="sheetKeep"
+                  type="checkbox"
+                  title="Keep the original colors for this region unchanged."
+                /><span>Keep original</span></span
               >
               <span class="pill"
-                ><input id="sheetLock" type="checkbox" /><span>Lock</span></span
+                ><input
+                  id="sheetLock"
+                  type="checkbox"
+                  title="Lock this region to prevent accidental changes."
+                /><span>Lock</span></span
               >
-              <button id="sheetRevert" class="btn gray">↺ Revert</button>
+              <button
+                id="sheetRevert"
+                class="btn gray"
+                title="Revert this region to its original state or family color."
+              >
+                ↺ Revert
+              </button>
             </div>
           </div>
           <div class="section">
@@ -281,6 +362,7 @@
                 min="-40"
                 max="40"
                 value="0"
+                title="Adjust the lightness/darkness of the selected region. Negative values make it darker, positive values make it lighter."
               /><span id="sheetDarkVal">0</span>
             </div>
           </div>
@@ -290,6 +372,7 @@
                 id="pickFromPreview"
                 class="btn gray"
                 style="display: none"
+                title="Click this, then click on the shiny preview to pick a color from it."
               >
                 🎯 Pick from preview
               </button>
@@ -297,6 +380,7 @@
                 id="pickFromTexture"
                 class="btn gray"
                 style="display: none"
+                title="Pick a color from a texture overlay. Select a texture first in the dropdown."
               >
                 🎯 Pick from texture
               </button>
@@ -310,6 +394,7 @@
               <label
                 class="toggle"
                 style="font-size: 12px; margin-left: 4px; display: none"
+                title="Enable individual pixel-level editing instead of region-based editing."
               >
                 <input id="pixelLevelMode" type="checkbox" />
                 Individual pixels
@@ -318,6 +403,7 @@
                 id="texChooser"
                 style="display: none; padding: 8px 10px"
                 class="btn gray"
+                title="Choose which shiny texture to use for color picking."
               >
                 <option value="">(choose shiny texture)</option>
               </select>
@@ -426,46 +512,138 @@
       <div class="sheet-content">
         <div class="row">
           <h3>Hotkey Settings</h3>
-          <button id="closeHotkeyModal" class="btn gray">Close</button>
+          <button
+            id="closeHotkeyModal"
+            class="btn gray"
+            title="Close the hotkey configuration menu."
+          >
+            Close
+          </button>
         </div>
         <div class="section">
           <div class="kv">
             <label>Open Hotkeys</label
-            ><input id="hkOpen" type="text" placeholder="?" />
+            ><input
+              id="hkOpen"
+              type="text"
+              placeholder="?"
+              title="Hotkey to open this hotkey configuration menu."
+            />
             <label>Load Selected</label
-            ><input id="hkLoad" type="text" placeholder="l" />
+            ><input
+              id="hkLoad"
+              type="text"
+              placeholder="l"
+              title="Hotkey to automatically load the selected texture files."
+            />
             <label>Save PNG</label
-            ><input id="hkSave" type="text" placeholder="s" />
+            ><input
+              id="hkSave"
+              type="text"
+              placeholder="s"
+              title="Hotkey to save the current shiny sprite as PNG."
+            />
             <label>Recluster</label
-            ><input id="hkRecluster" type="text" placeholder="r" />
+            ><input
+              id="hkRecluster"
+              type="text"
+              placeholder="r"
+              title="Hotkey to recalculate color families and regions."
+            />
             <label>Toggle Debug</label
-            ><input id="hkDebug" type="text" placeholder="d" />
+            ><input
+              id="hkDebug"
+              type="text"
+              placeholder="d"
+              title="Hotkey to toggle the protected pixel overlay."
+            />
             <label>Toggle Region Outline</label
-            ><input id="hkOutline" type="text" placeholder="o" />
+            ><input
+              id="hkOutline"
+              type="text"
+              placeholder="o"
+              title="Hotkey to toggle the selected region outline."
+            />
             <label>Toggle Edit-Protected</label
-            ><input id="hkEditProt" type="text" placeholder="e" />
+            ><input
+              id="hkEditProt"
+              type="text"
+              placeholder="e"
+              title="Hotkey to toggle editing of protected pixels."
+            />
             <label>Pick from Preview</label
-            ><input id="hkPickPrev" type="text" placeholder="p" />
+            ><input
+              id="hkPickPrev"
+              type="text"
+              placeholder="p"
+              title="Hotkey to enable color picking from the shiny preview."
+            />
             <label>Pick from Texture</label
-            ><input id="hkPickTex" type="text" placeholder="t" />
+            ><input
+              id="hkPickTex"
+              type="text"
+              placeholder="t"
+              title="Hotkey to open texture color picker."
+            />
             <label>Apply Multiple</label
-            ><input id="hkPickApply" type="text" placeholder="a" />
+            ><input
+              id="hkPickApply"
+              type="text"
+              placeholder="a"
+              title="Hotkey to enable Pick & Apply mode for applying colors to multiple regions."
+            />
             <label>Prev Region</label
-            ><input id="hkPrevReg" type="text" placeholder="[" />
+            ><input
+              id="hkPrevReg"
+              type="text"
+              placeholder="["
+              title="Hotkey to select the previous color region."
+            />
             <label>Next Region</label
-            ><input id="hkNextReg" type="text" placeholder="]" />
+            ><input
+              id="hkNextReg"
+              type="text"
+              placeholder="]"
+              title="Hotkey to select the next color region."
+            />
             <label>Keep Original (region)</label
-            ><input id="hkKeep" type="text" placeholder="k" />
+            ><input
+              id="hkKeep"
+              type="text"
+              placeholder="k"
+              title="Hotkey to toggle 'Keep Original' for the selected region."
+            />
             <label>Previous Pokémon</label
-            ><input id="hkPrevPokemon" type="text" placeholder="," />
+            ><input
+              id="hkPrevPokemon"
+              type="text"
+              placeholder=","
+              title="Hotkey to navigate to the previous Pokémon in the folder."
+            />
             <label>Next Pokémon</label
-            ><input id="hkNextPokemon" type="text" placeholder="." />
+            ><input
+              id="hkNextPokemon"
+              type="text"
+              placeholder="."
+              title="Hotkey to navigate to the next Pokémon in the folder."
+            />
             <label>Toggle Zoom Mode</label
-            ><input id="hkZoom" type="text" placeholder="z" />
+            ><input
+              id="hkZoom"
+              type="text"
+              placeholder="z"
+              title="Hotkey to toggle zoom mode for magnified sprite viewing."
+            />
           </div>
         </div>
         <div class="section">
-          <button id="saveHotkeys" class="btn">Save Hotkeys</button>
+          <button
+            id="saveHotkeys"
+            class="btn"
+            title="Save the current hotkey configuration."
+          >
+            Save Hotkeys
+          </button>
         </div>
       </div>
     </div>
@@ -495,6 +673,7 @@
             border: 1px solid #94a3b8;
             touch-action: none;
           "
+          title="Click or drag on the texture to pick colors. The magnifying glass shows a zoomed view of the area under your cursor."
         ></canvas>
         <div
           id="loupe"
@@ -529,8 +708,20 @@
           justify-content: center;
         "
       >
-        <button id="pickerDone" class="btn gray">Done</button>
-        <button id="pickerCancel" class="btn gray">Cancel</button>
+        <button
+          id="pickerDone"
+          class="btn gray"
+          title="Confirm the color selection and close the texture picker."
+        >
+          Done
+        </button>
+        <button
+          id="pickerCancel"
+          class="btn gray"
+          title="Cancel color picking and close the texture picker without making changes."
+        >
+          Cancel
+        </button>
         <span class="mut" style="color: #e5e7eb"
           >Tap/drag to sample. Sets this region’s shiny base (if unlinked & not
           kept).</span
