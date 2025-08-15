@@ -624,6 +624,46 @@ function dE(a, b) {
     db = a[2] - b[2];
   return Math.sqrt(dL * dL + da * da + db * db);
 }
+
+// Enhanced color analysis functions for better consensus
+function labToHue(lab) {
+  const a = lab[1],
+    b = lab[2];
+  if (a === 0 && b === 0) return 0; // Achromatic
+  return (Math.atan2(b, a) * 180) / Math.PI;
+}
+
+function labToChroma(lab) {
+  const a = lab[1],
+    b = lab[2];
+  return Math.sqrt(a * a + b * b);
+}
+
+function hueDistance(hue1, hue2) {
+  const diff = Math.abs(hue1 - hue2);
+  return Math.min(diff, 360 - diff);
+}
+
+function analyzeColorHarmony(colorLab, candidateLab) {
+  const hue1 = labToHue(colorLab);
+  const hue2 = labToHue(candidateLab);
+  const hDist = hueDistance(hue1, hue2);
+
+  // Bonus for complementary colors (opposite on color wheel)
+  const complementaryBonus = hDist > 150 && hDist < 210 ? 1.2 : 1.0;
+
+  // Bonus for analogous colors (close on color wheel)
+  const analogousBonus = hDist < 30 ? 1.1 : 1.0;
+
+  // Preserve saturation relationships
+  const chroma1 = labToChroma(colorLab);
+  const chroma2 = labToChroma(candidateLab);
+  const chromaRatio =
+    chroma1 > 0 ? Math.min(chroma2 / chroma1, chroma1 / chroma2) : 1.0;
+  const chromaBonus = 0.5 + 0.5 * chromaRatio;
+
+  return complementaryBonus * analogousBonus * chromaBonus;
+}
 const hex = (r, g, b) =>
   "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 const unhex = (h) => [
@@ -658,6 +698,8 @@ let forceEditProtected = false,
   pickMode = null,
   pickedColorForApply = null; // New state for pick & apply mode
 let contrastFactor = 1.1; // 110%
+let colorConsensusCount = 3; // Number of candidates to consider for consensus
+let debugColorConsensus = false; // Enable debug logging for color consensus
 let zoomMode = false; // Zoom feature state
 let showRegionOutline = false; // Show selected region outline
 
@@ -697,6 +739,14 @@ $("#contrast").oninput = (e) => {
   $("#contrastVal").textContent = Math.round(contrastFactor * 100) + "%";
   sprite && applyShiny();
 };
+$("#colorConsensus").oninput = (e) => {
+  colorConsensusCount = +e.target.value;
+  $("#colorConsensusVal").textContent = colorConsensusCount;
+  // Trigger recomputation if we have a sprite loaded
+  if (sprite && pixLabs) {
+    computeFamiliesAndRegions();
+  }
+};
 $("#editProtected").onchange = (e) => {
   forceEditProtected = e.target.checked;
   applyShiny();
@@ -704,6 +754,12 @@ $("#editProtected").onchange = (e) => {
 };
 $("#showDebug").onchange = (e) => {
   drawDebug();
+};
+$("#debugColorConsensus").onchange = (e) => {
+  debugColorConsensus = e.target.checked;
+  if (debugColorConsensus) {
+    console.log("Color consensus debugging enabled");
+  }
 };
 $("#showRegionOutline").onchange = (e) => {
   showRegionOutline = e.target.checked;
@@ -942,6 +998,8 @@ function buildMap() {
       mapIndex.push({
         nLab: [t.nL / t.c, t.na / t.c, t.nb / t.c],
         sLab: [t.L / t.c, t.a / t.c, t.b / t.c],
+        weight: t.c, // Frequency weight for consensus
+        textureKey: key, // Track which texture this came from
       });
     shinyTextureKeys.push(key);
   }
@@ -1031,17 +1089,157 @@ function drawSprite() {
 /* ===== clustering / regions ===== */
 function suggest(centerLab) {
   if (!mapIndex.length) return centerLab.slice();
-  let bd = 1e9,
-    best = mapIndex[0];
+
+  // If consensus count is 1, use original algorithm for efficiency
+  if (colorConsensusCount === 1) {
+    let bd = 1e9,
+      best = mapIndex[0];
+    for (let i = 0; i < mapIndex.length; i++) {
+      const m = mapIndex[i];
+      const d = dE(centerLab, m.nLab);
+      if (d < bd) {
+        bd = d;
+        best = m;
+      }
+    }
+    return best.sLab.slice();
+  }
+
+  // Enhanced color consensus algorithm
+  const candidates = [];
+
+  // Find all potential matches within a reasonable distance
+  // Adjust max distance based on consensus count - more candidates need broader search
+  const MAX_DISTANCE = 20 + colorConsensusCount * 5; // 25-70 range
+
   for (let i = 0; i < mapIndex.length; i++) {
     const m = mapIndex[i];
-    const d = dE(centerLab, m.nLab);
-    if (d < bd) {
-      bd = d;
-      best = m;
+    const distance = dE(centerLab, m.nLab);
+
+    if (distance <= MAX_DISTANCE) {
+      candidates.push({
+        mapping: m,
+        distance: distance,
+        score: calculateConsensusScore(m, distance, centerLab),
+      });
     }
   }
-  return best.sLab.slice();
+
+  if (candidates.length === 0) {
+    // Fallback to original behavior if no good candidates
+    // But use a more generous distance threshold
+    let bd = 1e9,
+      best = mapIndex[0];
+    for (let i = 0; i < mapIndex.length; i++) {
+      const m = mapIndex[i];
+      const d = dE(centerLab, m.nLab);
+      if (d < bd) {
+        bd = d;
+        best = m;
+      }
+    }
+    // console.log(`Fallback used for color [${centerLab.map(x => x.toFixed(1)).join(', ')}], distance: ${bd.toFixed(2)}`);
+    if (debugColorConsensus) {
+      console.log(
+        `Fallback: No close candidates for LAB [${centerLab
+          .map((x) => x.toFixed(1))
+          .join(", ")}], using closest with distance ${bd.toFixed(2)}`
+      );
+    }
+    return best.sLab.slice();
+  }
+
+  // Debug logging (uncomment for development)
+  // console.log(`Color consensus for [${centerLab.map(x => x.toFixed(1)).join(', ')}]: ${candidates.length} candidates, using top ${Math.min(colorConsensusCount, candidates.length)}`);
+  if (debugColorConsensus) {
+    console.log(
+      `Consensus: Found ${candidates.length} candidates for LAB [${centerLab
+        .map((x) => x.toFixed(1))
+        .join(", ")}], using top ${Math.min(
+        colorConsensusCount,
+        candidates.length
+      )}`
+    );
+  }
+
+  // Sort candidates by score (higher is better)
+  candidates.sort((a, b) => b.score - a.score);
+
+  // Take top N candidates for consensus
+  const topCandidates = candidates.slice(
+    0,
+    Math.min(colorConsensusCount, candidates.length)
+  );
+
+  // Apply texture diversity bonus
+  const textureUsage = new Map();
+  for (const candidate of topCandidates) {
+    const key = candidate.mapping.textureKey;
+    textureUsage.set(key, (textureUsage.get(key) || 0) + 1);
+  }
+
+  // Boost scores for candidates from less-used textures
+  for (const candidate of topCandidates) {
+    const usageCount = textureUsage.get(candidate.mapping.textureKey);
+    const totalTextures = textureUsage.size;
+    if (totalTextures > 1) {
+      // Diversity bonus: prefer textures used less frequently in this consensus
+      candidate.score *= 1 + 0.3 / usageCount;
+    }
+  }
+
+  // Re-sort after applying diversity bonus
+  topCandidates.sort((a, b) => b.score - a.score);
+
+  // Calculate weighted average of the top candidates
+  let totalWeight = 0;
+  let weightedL = 0,
+    weightedA = 0,
+    weightedB = 0;
+
+  for (const candidate of topCandidates) {
+    const weight = candidate.score;
+    totalWeight += weight;
+    weightedL += candidate.mapping.sLab[0] * weight;
+    weightedA += candidate.mapping.sLab[1] * weight;
+    weightedB += candidate.mapping.sLab[2] * weight;
+  }
+
+  const result = [
+    weightedL / totalWeight,
+    weightedA / totalWeight,
+    weightedB / totalWeight,
+  ];
+
+  if (debugColorConsensus) {
+    console.log(
+      `  → Final consensus: LAB [${result
+        .map((x) => x.toFixed(1))
+        .join(", ")}] from ${topCandidates.length} textures`
+    );
+  }
+
+  return result;
+}
+
+// Calculate a consensus score for a color mapping candidate
+function calculateConsensusScore(mapping, distance, originalLab) {
+  // Start with frequency weight (how often this color appears in textures)
+  let score = Math.log(mapping.weight + 1); // Log to prevent extreme values
+
+  // Inverse distance bonus (closer matches get higher scores)
+  score += 10 / (distance + 1);
+
+  // Color harmony bonus
+  if (originalLab) {
+    const harmonyBonus = analyzeColorHarmony(originalLab, mapping.sLab);
+    score *= harmonyBonus;
+  }
+
+  // Bonus for mappings from different textures (diversity bonus)
+  // This could be enhanced to track texture diversity if needed
+
+  return score;
 }
 function computeFamiliesAndRegions() {
   if (!pixLabs) {

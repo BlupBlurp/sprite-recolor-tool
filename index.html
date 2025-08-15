@@ -117,7 +117,15 @@
               min="50"
               max="170"
               value="110"
-            /><span id="contrastVal">110%</span>
+            /><span id="contrastVal">110%</span> <label>Color Consensus</label
+            ><input
+              id="colorConsensus"
+              type="range"
+              min="1"
+              max="10"
+              value="1"
+              title="Number of texture candidates to consider for color suggestions. Higher values blend more textures for smoother results."
+            /><span id="colorConsensusVal">3</span>
           </div>
           <hr />
           <div class="row">
@@ -128,6 +136,10 @@
             <label class="toggle"
               ><input id="showDebug" type="checkbox" /> Show protected
               overlay</label
+            >
+            <label class="toggle"
+              ><input id="debugColorConsensus" type="checkbox" /> Debug color
+              consensus</label
             >
             <label class="toggle"
               ><input id="showRegionOutline" type="checkbox" /> Show selected
