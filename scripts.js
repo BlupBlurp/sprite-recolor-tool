@@ -679,7 +679,10 @@ $("#k").oninput = (e) => {
 $("#ink").oninput = (e) => {
   PROTECT_NEAR_BLACK = +e.target.value;
   $("#inkVal").textContent = PROTECT_NEAR_BLACK;
-  sprite && drawSprite();
+  if (sprite) {
+    drawSprite();
+    applyShiny();
+  }
 };
 $("#smoothPx").oninput = (e) => {
   $("#smoothPxVal").textContent = e.target.value;
