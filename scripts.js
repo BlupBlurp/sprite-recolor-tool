@@ -53,6 +53,107 @@ let POKEDEX = (() => {
   } catch (e) {}
   return POKEDEX_DEFAULT;
 })();
+
+/* ===== Seeded Random Number Generator ===== */
+let currentSeed = null;
+let rngState = 0;
+
+// Simple but effective xorshift32 RNG
+function setSeed(seed) {
+  if (seed === null || seed === undefined || seed === "") {
+    // Generate a random seed if none provided
+    currentSeed = Math.floor(Math.random() * 2147483647);
+  } else {
+    // Parse the provided seed
+    currentSeed = parseInt(seed);
+    if (isNaN(currentSeed)) {
+      currentSeed = hashString(seed.toString());
+    }
+  }
+
+  // Ensure seed is a valid 32-bit integer and not zero
+  currentSeed = Math.abs(currentSeed) || 1;
+  rngState = currentSeed;
+
+  // Save seed to localStorage for persistence
+  try {
+    localStorage.setItem("bdsp_rng_seed", currentSeed.toString());
+  } catch (e) {}
+
+  // Update the UI to show current seed
+  updateSeedDisplay();
+
+  return currentSeed;
+}
+
+// Initialize seed from localStorage or generate new one
+function initializeSeed() {
+  try {
+    const savedSeed = localStorage.getItem("bdsp_rng_seed");
+    if (savedSeed) {
+      currentSeed = parseInt(savedSeed);
+      if (!isNaN(currentSeed) && currentSeed > 0) {
+        rngState = currentSeed;
+        updateSeedDisplay();
+        return;
+      }
+    }
+  } catch (e) {}
+
+  // No valid saved seed, generate a new one
+  setSeed(null);
+}
+
+// Initialize the seed when the page loads
+initializeSeed();
+
+function hashString(str) {
+  let hash = 0;
+  if (str.length === 0) return 1;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash) || 1;
+}
+
+function seededRandom() {
+  // xorshift32 algorithm
+  rngState ^= rngState << 13;
+  rngState ^= rngState >>> 17;
+  rngState ^= rngState << 5;
+  return (rngState >>> 0) / 4294967296; // Convert to [0, 1)
+}
+
+function updateSeedDisplay() {
+  const seedElement = $("#currentSeed");
+  if (seedElement) {
+    seedElement.textContent = currentSeed || "-";
+
+    // Add click handler to copy seed to clipboard
+    seedElement.onclick = () => {
+      if (currentSeed) {
+        navigator.clipboard
+          .writeText(currentSeed.toString())
+          .then(() => {
+            toast("Seed copied to clipboard!");
+          })
+          .catch(() => {
+            // Fallback for older browsers
+            const textArea = document.createElement("textarea");
+            textArea.value = currentSeed.toString();
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            toast("Seed copied to clipboard!");
+          });
+      }
+    };
+  }
+}
+
 /* ===== folder ingest ===== */
 let pickedFiles = [];
 let folders = new Map();
@@ -305,6 +406,7 @@ $("#loadBtn").addEventListener("click", async () => {
   sprite.onload = () => {
     drawSprite();
     requestAnimationFrame(() => {
+      // Use existing seed for consistent results, or it can be changed via UI
       computeFamiliesAndRegions();
       applyShiny();
     });
@@ -600,9 +702,30 @@ $("#showDebug").onchange = (e) => {
 };
 $("#recluster").onclick = () => {
   if (!sprite) return;
+
+  // Check if there's a seed in the input field
+  const seedInput = $("#seedInput");
+  const inputSeed = seedInput.value.trim();
+
+  if (inputSeed) {
+    // Use the provided seed and clear the field
+    setSeed(inputSeed);
+    seedInput.value = "";
+  } else {
+    // Generate new random seed
+    setSeed(null);
+  }
+
   computeFamiliesAndRegions();
   applyShiny();
 };
+
+// Allow pressing Enter in the seed input to trigger recluster
+$("#seedInput").addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    $("#recluster").click();
+  }
+});
 $("#saveBtn").onclick = () => {
   if (!sprite) return;
   const a = document.createElement("a");
@@ -791,7 +914,7 @@ function computeFamiliesAndRegions() {
   const K = Math.min(kFamilies, pts.length);
   let centers = [];
   for (let i = 0; i < K; i++)
-    centers.push(pts[(Math.random() * pts.length) | 0].slice());
+    centers.push(pts[(seededRandom() * pts.length) | 0].slice());
   const asg = new Array(pts.length).fill(0);
   for (let it = 0; it < 8; it++) {
     for (let i = 0; i < pts.length; i++) {
@@ -910,9 +1033,13 @@ const labToHex = (Lab) => {
 };
 function renderPanel() {
   /* removed Families & Regions UI */
-  
+
   // Update region panel based on current selection
-  if (selectedRegion >= 0 && regions[selectedRegion] && !regions[selectedRegion].deleted) {
+  if (
+    selectedRegion >= 0 &&
+    regions[selectedRegion] &&
+    !regions[selectedRegion].deleted
+  ) {
     openSheet(selectedRegion);
   } else {
     // No region selected or invalid selection
