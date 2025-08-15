@@ -160,6 +160,7 @@ let folders = new Map();
 let currentFolder = null;
 let currentTextures = [];
 let currentSpriteFile = null;
+let folderJustChanged = false; // Flag to track folder changes
 
 $("#pickRoot").addEventListener("change", (e) => {
   pickedFiles = [...e.target.files].map((f) => ({
@@ -186,7 +187,6 @@ function indexFolders() {
   }
   renderFolderList();
   $("#texList").innerHTML = "<small>Select a folder to list textures</small>";
-  $("#spriteSel").innerHTML = '<option value="">(icon/*.png)</option>';
   currentFolder = null;
   currentTextures = [];
   currentSpriteFile = null;
@@ -329,24 +329,33 @@ function updateSelectedTextures() {
   st(`Selected ${currentTextures.length} texture(s)`);
 
   // Auto-apply: if a sprite is already loaded, rebuild texPairs for current folder and re-apply
+  // If no sprite is loaded but textures are selected, auto-load the sprite
+  // If folder just changed, always do a full reload
   try {
-    if (currentSpriteFile && currentFolder) {
-      (async () => {
-        st("Updating textures…");
-        const key = currentFolder.toLowerCase();
-        const Nobjs = [],
-          Sobjs = [];
-        for (const pr of currentTextures) {
-          if (pr.N) Nobjs.push(await fileToImageObj(pr.N));
-          if (pr.S) Sobjs.push(await fileToImageObj(pr.S));
-        }
-        texPairs[key] = { N: Nobjs, S: Sobjs };
-        buildMap();
-        fillTexDropdown();
-        if (typeof applyShiny === "function") applyShiny();
-        if (typeof drawDebug === "function") drawDebug();
-        st("");
-      })();
+    if (currentFolder && currentTextures.length > 0) {
+      if (currentSpriteFile && !folderJustChanged) {
+        // Sprite already loaded and folder didn't change, just update textures
+        (async () => {
+          st("Updating textures…");
+          const key = currentFolder.toLowerCase();
+          const Nobjs = [],
+            Sobjs = [];
+          for (const pr of currentTextures) {
+            if (pr.N) Nobjs.push(await fileToImageObj(pr.N));
+            if (pr.S) Sobjs.push(await fileToImageObj(pr.S));
+          }
+          texPairs[key] = { N: Nobjs, S: Sobjs };
+          buildMap();
+          fillTexDropdown();
+          if (typeof applyShiny === "function") applyShiny();
+          if (typeof drawDebug === "function") drawDebug();
+          st("");
+        })();
+      } else {
+        // No sprite loaded OR folder just changed, do full reload
+        folderJustChanged = false; // Reset the flag
+        autoLoadSelected();
+      }
     }
   } catch (e) {
     console.warn("updateSelectedTextures auto-apply failed", e);
@@ -354,34 +363,27 @@ function updateSelectedTextures() {
 }
 
 function renderSpriteList() {
-  const sel = $("#spriteSel");
-  sel.innerHTML = '<option value="">(icon/*.png)</option>';
+  // No longer needed since we auto-select the first sprite
   if (!currentFolder) return;
   const pack = folders.get(currentFolder);
-  (pack?.sprites || [])
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .forEach((f, i) => {
-      const o = document.createElement("option");
-      o.value = String(i);
-      o.textContent = trimPM(f.name);
-      sel.appendChild(o);
-    });
+  // Auto-select the first sprite if available
+  if (pack?.sprites && pack.sprites.length > 0) {
+    currentSpriteFile = pack.sprites[0];
+  }
 }
 
-/* ===== load selected ===== */
-$("#loadBtn").addEventListener("click", async () => {
+/* ===== auto load when textures are selected ===== */
+async function autoLoadSelected() {
   if (!currentFolder) {
     toast("Pick a folder");
     return;
   }
   const pack = folders.get(currentFolder);
-  const sIdx = +($("#spriteSel").value || "-1");
-  if (!(pack && pack.sprites && pack.sprites[sIdx])) {
-    toast("Pick a sprite from icon/");
+  if (!(pack && pack.sprites && pack.sprites[0])) {
+    toast("No sprite found in icon/ folder");
     return;
   }
-  currentSpriteFile = pack.sprites[sIdx];
+  currentSpriteFile = pack.sprites[0];
   if (currentTextures.length === 0) {
     toast("Select at least one texture");
     return;
@@ -418,7 +420,7 @@ $("#loadBtn").addEventListener("click", async () => {
 
   // Load home texture preview
   loadHomeTexturePreview();
-});
+}
 
 /* ===== Pokemon navigation ===== */
 $("#prevPokemon").addEventListener("click", () => {
@@ -2012,8 +2014,12 @@ function pickDefaultSourceForCurrentFolder() {
     }
     return -1;
   }
-  let idx = findIndex(pack.textures, /_home_col_rare\.png$/i);
-  if (idx >= 0) {
+  let idx = -1;
+
+  // Priority order: sprites (icon folder) first, then home textures, then other textures
+  if (pack.sprites && pack.sprites.length) {
+    sel.value = "S|0";
+  } else if ((idx = findIndex(pack.textures, /_home_col_rare\.png$/i)) >= 0) {
     sel.value = "T|" + idx;
   } else if ((idx = findIndex(pack.textures, /_home_col\.png$/i)) >= 0) {
     sel.value = "T|" + idx;
@@ -2021,8 +2027,6 @@ function pickDefaultSourceForCurrentFolder() {
     sel.value = "T|0";
   } else if (pack.extras && pack.extras.length) {
     sel.value = "E|0";
-  } else if (pack.sprites && pack.sprites.length) {
-    sel.value = "S|0";
   } else {
     return;
   }
@@ -2444,7 +2448,7 @@ function applyHKBindings() {
     }
     if (k === HK.load) {
       e.preventDefault();
-      $("#loadBtn").click();
+      autoLoadSelected();
       return;
     }
     if (k === HK.save) {
@@ -2607,34 +2611,13 @@ function stepRegion(dir) {
   openSheet(selectedRegion);
 }
 
-// === Patch: make folder dropdown actually load selection ===
-function fillSpriteDropdownForCurrentFolder() {
-  const sel = document.getElementById("spriteSel");
-  if (!sel) {
-    return;
-  }
-  sel.innerHTML = '<option value="">(icon/*.png)</option>';
-  if (!currentFolder) {
-    return;
-  }
+// === Auto-select sprite when folder is selected ===
+function autoSelectSpriteForCurrentFolder() {
+  if (!currentFolder) return;
   const pack = folders.get(currentFolder);
-  if (!(pack && pack.sprites && pack.sprites.length)) return;
-  const frag = document.createDocumentFragment();
-  for (let i = 0; i < pack.sprites.length; i++) {
-    const f = pack.sprites[i];
-    const opt = document.createElement("option");
-    opt.value = String(i);
-    // show trimmed name if helper exists
-    try {
-      const nm =
-        f && f.name ? f.name.replace(/^.*\//, "") : "sprite " + (i + 1);
-      opt.textContent = nm;
-    } catch (_) {
-      opt.textContent = "sprite " + (i + 1);
-    }
-    frag.appendChild(opt);
+  if (pack?.sprites && pack.sprites.length > 0) {
+    currentSpriteFile = pack.sprites[0];
   }
-  sel.appendChild(frag);
 }
 
 (function attachFolderSelHandler() {
@@ -2654,6 +2637,7 @@ function fillSpriteDropdownForCurrentFolder() {
       return;
     }
     currentFolder = key;
+    folderJustChanged = true; // Mark that folder just changed
     // refresh texture checkboxes & mapping
     if (typeof renderTextureList === "function") renderTextureList();
     if (typeof updateSelectedTextures === "function") updateSelectedTextures();
@@ -2661,17 +2645,10 @@ function fillSpriteDropdownForCurrentFolder() {
     if (typeof fillSourceDropdown === "function") fillSourceDropdown();
     if (typeof pickDefaultSourceForCurrentFolder === "function")
       pickDefaultSourceForCurrentFolder();
-    // fill sprites and select first
-    fillSpriteDropdownForCurrentFolder();
-    const sprSel = document.getElementById("spriteSel");
-    if (sprSel && sprSel.options.length > 1) {
-      sprSel.selectedIndex = 1; // skip placeholder
-    }
+    // Auto-select sprite for the current folder
+    autoSelectSpriteForCurrentFolder();
     // Update home texture preview
     loadHomeTexturePreview();
-    // fire load using the existing click handler
-    const btn = document.getElementById("loadBtn");
-    if (btn && typeof btn.click === "function") btn.click();
   });
 
   // Auto-trigger on first render if options exist
@@ -2684,15 +2661,5 @@ function fillSpriteDropdownForCurrentFolder() {
   }
 })();
 
-// === Patch: when form/sprite selection changes, auto-load and choose default source ===
-(function attachSpriteSelHandler() {
-  const sprSel = document.getElementById("spriteSel");
-  if (!sprSel) return;
-  sprSel.addEventListener("change", () => {
-    const btn = document.getElementById("loadBtn");
-    if (btn && typeof btn.click === "function") btn.click();
-    if (typeof fillSourceDropdown === "function") fillSourceDropdown();
-    if (typeof pickDefaultSourceForCurrentFolder === "function")
-      pickDefaultSourceForCurrentFolder();
-  });
-})();
+// Auto-load selected items when textures change
+// This is handled in the updateCurrentTextures function above

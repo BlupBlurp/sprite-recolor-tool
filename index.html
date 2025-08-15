@@ -3,42 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>
-      BDSP Shiny Builder — Folder UI (Dark • white canvases + Hotkeys + Dex
-      names)
-    </title>
+    <title>Pokémon Recolor Tool</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header>
-      <h1>BDSP Shiny Builder — Folder UI</h1>
-      <div class="controls">
-        <label class="btn"
-          ><input
-            id="pickRoot"
-            type="file"
-            webkitdirectory
-            multiple
-            accept="image/*"
-          />Pick Root Folder</label
-        >
-        <button id="saveBtn" class="btn gray">Save PNG</button>
-        <button id="hotkeyBtn" class="btn gray">Hotkeys</button>
-        <button id="zoomToggle" class="btn gray">Zoom Mode</button>
-
-        <div id="status">Idle</div>
-      </div>
-      <small
-        >Root contains folders like <code>pm####_##_##/</code>. Inside: textures
-        and an <code>icon/</code> folder with sprites.</small
-      >
-    </header>
-
     <div class="grid">
       <!-- LEFT -->
       <div class="card">
         <fieldset>
-          <legend>Pokemon</legend>
+          <legend>Pokémon</legend>
           <div class="kv kv-onecol">
             <div class="row" style="gap: 4px">
               <select id="folderSel" style="flex: 1">
@@ -67,17 +40,11 @@
                 <code>*_col_rare</code> is used internally.</small
               >
             </div>
-            <select id="spriteSel">
-              <option value="">(icon/*.png)</option>
-            </select>
-          </div>
-          <div class="row" style="margin-top: 8px">
-            <button id="loadBtn" class="btn">Load Selected</button>
           </div>
         </fieldset>
 
         <fieldset>
-          <legend>Defaults</legend>
+          <legend>Settings</legend>
           <div class="kv">
             <label>Family Count</label
             ><input id="k" type="range" min="5" max="48" value="32" /><span
@@ -161,7 +128,7 @@
               <input
                 id="seedInput"
                 type="text"
-                placeholder="Enter seed (optional)"
+                placeholder="Enter seed"
                 style="flex: 1; font-size: 12px"
               />
             </div>
@@ -171,6 +138,26 @@
 
       <!-- RIGHT -->
       <div class="card">
+        <!-- Controls moved from header -->
+        <div class="controls-section">
+          <h1>Pokémon Recolor Tool</h1>
+          <div class="controls">
+            <label class="btn"
+              ><input
+                id="pickRoot"
+                type="file"
+                webkitdirectory
+                multiple
+                accept="image/*"
+              />Pick Root Folder</label
+            >
+            <button id="saveBtn" class="btn gray">Save PNG</button>
+            <button id="hotkeyBtn" class="btn gray">Hotkeys</button>
+            <button id="zoomToggle" class="btn gray">Zoom Mode</button>
+          </div>
+          <div id="status">Idle</div>
+        </div>
+
         <div class="preview">
           <div class="canvasWrap">
             <fieldset>
@@ -212,7 +199,7 @@
           </div>
           <div class="canvasWrap">
             <fieldset>
-              <legend>Shiny (live)</legend>
+              <legend>Shiny</legend>
               <canvas id="c1"></canvas>
             </fieldset>
             <canvas id="cGuide" style="display: none"></canvas>
@@ -247,8 +234,8 @@
       <div class="card">
         <fieldset>
           <legend>Region</legend>
-          <div class="row">
-            <h3 id="sheetTitle">Region</h3>
+          <div class="row" style="margin-top: 0">
+            <h3 id="sheetTitle" style="margin-top: 0">Region</h3>
             <span
               id="pickedSwatch"
               style="
