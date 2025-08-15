@@ -24,6 +24,7 @@
         >
         <button id="saveBtn" class="btn gray">Save PNG</button>
         <button id="hotkeyBtn" class="btn gray">Hotkeys</button>
+        <button id="zoomToggle" class="btn gray">Zoom Mode</button>
 
         <div id="status">Idle</div>
       </div>
@@ -128,6 +129,10 @@
               ><input id="showDebug" type="checkbox" /> Show protected
               overlay</label
             >
+            <label class="toggle"
+              ><input id="showRegionOutline" type="checkbox" /> Show selected
+              region outline</label
+            >
             <button id="recluster" class="btn gray">Recluster</button>
             <div class="row" style="gap: 4px; margin-top: 8px">
               <label style="font-size: 12px; color: #888">Seed:</label>
@@ -172,6 +177,30 @@
               </div>
             </fieldset>
             <canvas id="dbg0" class="debugOverlay"></canvas>
+            <div
+              id="zoomOverlay0"
+              class="zoomOverlay"
+              style="
+                position: absolute;
+                width: 100px;
+                height: 100px;
+                border-radius: 50%;
+                border: 2px solid #111;
+                box-shadow: 0 0 0 2px #0003 inset;
+                background: #000;
+                display: none;
+                pointer-events: none;
+                overflow: hidden;
+                z-index: 100;
+              "
+            >
+              <canvas
+                id="zoomCanvas0"
+                width="100"
+                height="100"
+                style="width: 100%; height: 100%; image-rendering: pixelated"
+              ></canvas>
+            </div>
           </div>
           <div class="canvasWrap">
             <fieldset>
@@ -180,6 +209,30 @@
             </fieldset>
             <canvas id="cGuide" style="display: none"></canvas>
             <canvas id="dbg1" class="debugOverlay"></canvas>
+            <div
+              id="zoomOverlay1"
+              class="zoomOverlay"
+              style="
+                position: absolute;
+                width: 100px;
+                height: 100px;
+                border-radius: 50%;
+                border: 2px solid #111;
+                box-shadow: 0 0 0 2px #0003 inset;
+                background: #000;
+                display: none;
+                pointer-events: none;
+                overflow: hidden;
+                z-index: 100;
+              "
+            >
+              <canvas
+                id="zoomCanvas1"
+                width="100"
+                height="100"
+                style="width: 100%; height: 100%; image-rendering: pixelated"
+              ></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -374,45 +427,51 @@
     </div>
 
     <!-- Hotkeys Modal -->
-    <div id="hotkeyModal" class="sheet">
-      <div class="row">
-        <h3>Hotkey Settings</h3>
-        <button id="closeHotkeyModal" class="btn gray">Close</button>
-      </div>
-      <div class="section">
-        <div class="kv">
-          <label>Open Hotkeys</label
-          ><input id="hkOpen" type="text" placeholder="?" />
-          <label>Load Selected</label
-          ><input id="hkLoad" type="text" placeholder="l" />
-          <label>Save PNG</label
-          ><input id="hkSave" type="text" placeholder="s" />
-          <label>Recluster</label
-          ><input id="hkRecluster" type="text" placeholder="r" />
-          <label>Toggle Debug</label
-          ><input id="hkDebug" type="text" placeholder="d" />
-          <label>Toggle Edit-Protected</label
-          ><input id="hkEditProt" type="text" placeholder="e" />
-          <label>Pick from Preview</label
-          ><input id="hkPickPrev" type="text" placeholder="p" />
-          <label>Pick from Texture</label
-          ><input id="hkPickTex" type="text" placeholder="t" />
-          <label>Apply Multiple</label
-          ><input id="hkPickApply" type="text" placeholder="a" />
-          <label>Prev Region</label
-          ><input id="hkPrevReg" type="text" placeholder="[" />
-          <label>Next Region</label
-          ><input id="hkNextReg" type="text" placeholder="]" />
-          <label>Keep Original (region)</label
-          ><input id="hkKeep" type="text" placeholder="k" />
-          <label>Previous Pokémon</label
-          ><input id="hkPrevPokemon" type="text" placeholder="," />
-          <label>Next Pokémon</label
-          ><input id="hkNextPokemon" type="text" placeholder="." />
+    <div id="hotkeyModal" class="modal-overlay">
+      <div class="sheet-content">
+        <div class="row">
+          <h3>Hotkey Settings</h3>
+          <button id="closeHotkeyModal" class="btn gray">Close</button>
         </div>
-      </div>
-      <div class="section">
-        <button id="saveHotkeys" class="btn">Save Hotkeys</button>
+        <div class="section">
+          <div class="kv">
+            <label>Open Hotkeys</label
+            ><input id="hkOpen" type="text" placeholder="?" />
+            <label>Load Selected</label
+            ><input id="hkLoad" type="text" placeholder="l" />
+            <label>Save PNG</label
+            ><input id="hkSave" type="text" placeholder="s" />
+            <label>Recluster</label
+            ><input id="hkRecluster" type="text" placeholder="r" />
+            <label>Toggle Debug</label
+            ><input id="hkDebug" type="text" placeholder="d" />
+            <label>Toggle Region Outline</label
+            ><input id="hkOutline" type="text" placeholder="o" />
+            <label>Toggle Edit-Protected</label
+            ><input id="hkEditProt" type="text" placeholder="e" />
+            <label>Pick from Preview</label
+            ><input id="hkPickPrev" type="text" placeholder="p" />
+            <label>Pick from Texture</label
+            ><input id="hkPickTex" type="text" placeholder="t" />
+            <label>Apply Multiple</label
+            ><input id="hkPickApply" type="text" placeholder="a" />
+            <label>Prev Region</label
+            ><input id="hkPrevReg" type="text" placeholder="[" />
+            <label>Next Region</label
+            ><input id="hkNextReg" type="text" placeholder="]" />
+            <label>Keep Original (region)</label
+            ><input id="hkKeep" type="text" placeholder="k" />
+            <label>Previous Pokémon</label
+            ><input id="hkPrevPokemon" type="text" placeholder="," />
+            <label>Next Pokémon</label
+            ><input id="hkNextPokemon" type="text" placeholder="." />
+            <label>Toggle Zoom Mode</label
+            ><input id="hkZoom" type="text" placeholder="z" />
+          </div>
+        </div>
+        <div class="section">
+          <button id="saveHotkeys" class="btn">Save Hotkeys</button>
+        </div>
       </div>
     </div>
 

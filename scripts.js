@@ -658,6 +658,8 @@ let forceEditProtected = false,
   pickMode = null,
   pickedColorForApply = null; // New state for pick & apply mode
 let contrastFactor = 1.1; // 110%
+let zoomMode = false; // Zoom feature state
+let showRegionOutline = false; // Show selected region outline
 
 /* ===== sliders/toggles ===== */
 $("#k").oninput = (e) => {
@@ -700,6 +702,13 @@ $("#editProtected").onchange = (e) => {
 $("#showDebug").onchange = (e) => {
   drawDebug();
 };
+$("#showRegionOutline").onchange = (e) => {
+  showRegionOutline = e.target.checked;
+  drawDebug();
+};
+
+// Initialize the state based on checkbox
+showRegionOutline = $("#showRegionOutline").checked;
 $("#recluster").onclick = () => {
   if (!sprite) return;
 
@@ -744,6 +753,149 @@ $("#saveBtn").onclick = () => {
   a.href = $("#c1").toDataURL("image/png");
   a.click();
 };
+
+/* ===== zoom functionality ===== */
+function toggleZoomMode() {
+  zoomMode = !zoomMode;
+  const btn = $("#zoomToggle");
+  if (btn) {
+    btn.textContent = zoomMode ? "Zoom: ON" : "Zoom Mode";
+    btn.style.background = zoomMode ? "#4ade80" : "";
+    btn.style.color = zoomMode ? "#000" : "";
+  }
+
+  // Hide zoom overlays when disabled
+  if (!zoomMode) {
+    $("#zoomOverlay0").style.display = "none";
+    $("#zoomOverlay1").style.display = "none";
+  }
+
+  st(zoomMode ? "Zoom mode enabled" : "Zoom mode disabled");
+}
+
+function updateZoomOverlay(canvasId, overlayId, zoomCanvasId, mouseX, mouseY) {
+  if (!zoomMode) return;
+
+  const canvas = $(canvasId);
+  const overlay = $(overlayId);
+  const zoomCanvas = $(zoomCanvasId);
+
+  if (!canvas || !overlay || !zoomCanvas || !canvas.width || !canvas.height)
+    return;
+
+  const rect = canvas.getBoundingClientRect();
+  const canvasX = ((mouseX - rect.left) * canvas.width) / rect.width;
+  const canvasY = ((mouseY - rect.top) * canvas.height) / rect.height;
+
+  // Position the overlay near the cursor but offset to avoid blocking
+  const overlaySize = 100;
+  const offset = 20;
+  let overlayX = mouseX + offset;
+  let overlayY = mouseY - overlaySize - offset;
+
+  // Keep overlay within viewport
+  if (overlayX + overlaySize > window.innerWidth) {
+    overlayX = mouseX - overlaySize - offset;
+  }
+  if (overlayY < 0) {
+    overlayY = mouseY + offset;
+  }
+
+  overlay.style.left = overlayX + "px";
+  overlay.style.top = overlayY + "px";
+  overlay.style.display = "block";
+
+  // Draw zoomed content
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const zoomCtx = zoomCanvas.getContext("2d");
+
+  const zoomFactor = 8;
+  const captureSize = overlaySize / zoomFactor;
+  const halfCapture = captureSize / 2;
+
+  // Get source area to zoom
+  const sourceX = Math.max(0, Math.floor(canvasX - halfCapture));
+  const sourceY = Math.max(0, Math.floor(canvasY - halfCapture));
+  const sourceW = Math.min(Math.ceil(captureSize), canvas.width - sourceX);
+  const sourceH = Math.min(Math.ceil(captureSize), canvas.height - sourceY);
+
+  if (sourceW > 0 && sourceH > 0) {
+    try {
+      const imageData = ctx.getImageData(sourceX, sourceY, sourceW, sourceH);
+
+      // Clear zoom canvas
+      zoomCtx.fillStyle = "#222";
+      zoomCtx.fillRect(0, 0, overlaySize, overlaySize);
+
+      // Create temporary canvas for scaling
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = sourceW;
+      tempCanvas.height = sourceH;
+      const tempCtx = tempCanvas.getContext("2d");
+      tempCtx.putImageData(imageData, 0, 0);
+
+      // Draw scaled image
+      zoomCtx.imageSmoothingEnabled = false;
+      const drawW = sourceW * zoomFactor;
+      const drawH = sourceH * zoomFactor;
+      const centerX = (overlaySize - drawW) / 2;
+      const centerY = (overlaySize - drawH) / 2;
+
+      zoomCtx.drawImage(
+        tempCanvas,
+        0,
+        0,
+        sourceW,
+        sourceH,
+        centerX,
+        centerY,
+        drawW,
+        drawH
+      );
+
+      // Draw pixel selection box instead of crosshair
+      // Calculate which pixel we're hovering over
+      const pixelX = Math.floor(canvasX);
+      const pixelY = Math.floor(canvasY);
+
+      // Calculate the position of this pixel in the zoom view
+      const pixelInSourceX = pixelX - sourceX;
+      const pixelInSourceY = pixelY - sourceY;
+
+      // Only draw if the pixel is within our zoomed area
+      if (
+        pixelInSourceX >= 0 &&
+        pixelInSourceX < sourceW &&
+        pixelInSourceY >= 0 &&
+        pixelInSourceY < sourceH
+      ) {
+        const boxX = centerX + pixelInSourceX * zoomFactor;
+        const boxY = centerY + pixelInSourceY * zoomFactor;
+
+        // Draw pixel box with border for visibility
+        zoomCtx.strokeStyle = "#000";
+        zoomCtx.lineWidth = 2;
+        zoomCtx.strokeRect(boxX, boxY, zoomFactor, zoomFactor);
+
+        zoomCtx.strokeStyle = "#fff";
+        zoomCtx.lineWidth = 1;
+        zoomCtx.strokeRect(boxX, boxY, zoomFactor, zoomFactor);
+      }
+    } catch (e) {
+      // Silently handle any drawing errors
+    }
+  }
+}
+
+function hideZoomOverlay(overlayId) {
+  const overlay = $(overlayId);
+  if (overlay) {
+    overlay.style.display = "none";
+  }
+}
+
+// Button click handler
+$("#zoomToggle").onclick = toggleZoomMode;
 
 /* ===== texture→shiny map ===== */
 function buildMap() {
@@ -1045,6 +1197,7 @@ function renderPanel() {
     // No region selected or invalid selection
     $("#sheetTitle").textContent = "No region selected";
     $("#pickedSwatch").style.background = "#000";
+    drawDebug(); // Update debug overlay to hide region outline
   }
 }
 function openSheet(rid) {
@@ -1062,6 +1215,7 @@ function openSheet(rid) {
   $("#sheetDark").value = regionDark[rid] || 0;
   $("#sheetDarkVal").textContent = String(regionDark[rid] || 0);
   // right sidebar is always visible drawDebug();
+  drawDebug(); // Update debug overlay to show selected region outline
 }
 (() => {
   const el = $("#sheetClose");
@@ -1321,6 +1475,35 @@ $("#c1").onclick = (e) => {
     }
   }
 };
+
+// Add zoom functionality to canvas mouse events
+$("#c0").addEventListener("mousemove", (e) => {
+  updateZoomOverlay(
+    "#c0",
+    "#zoomOverlay0",
+    "#zoomCanvas0",
+    e.clientX,
+    e.clientY
+  );
+});
+
+$("#c0").addEventListener("mouseleave", () => {
+  hideZoomOverlay("#zoomOverlay0");
+});
+
+$("#c1").addEventListener("mousemove", (e) => {
+  updateZoomOverlay(
+    "#c1",
+    "#zoomOverlay1",
+    "#zoomCanvas1",
+    e.clientX,
+    e.clientY
+  );
+});
+
+$("#c1").addEventListener("mouseleave", () => {
+  hideZoomOverlay("#zoomOverlay1");
+});
 
 document.getElementById("pickFromTexture").onclick = () => {
   const sel = $("#texChooser");
@@ -1657,44 +1840,132 @@ function pickDefaultSourceForCurrentFolder() {
   })();
 }
 /* ===== debug overlay ===== */
+function getRegionOutlinePixels(regionId, width, height) {
+  if (!regionIds || regionId < 0 || !regions[regionId]) return [];
+
+  const outlinePixels = [];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const p = y * width + x;
+      if (regionIds[p] !== regionId) continue;
+
+      // Check if this pixel is on the edge (only check 4-connected neighbors for performance)
+      let isEdge = false;
+
+      // Check left
+      if (x === 0 || regionIds[p - 1] !== regionId) isEdge = true;
+      // Check right
+      else if (x === width - 1 || regionIds[p + 1] !== regionId) isEdge = true;
+      // Check up
+      else if (y === 0 || regionIds[p - width] !== regionId) isEdge = true;
+      // Check down
+      else if (y === height - 1 || regionIds[p + width] !== regionId)
+        isEdge = true;
+
+      if (isEdge) {
+        outlinePixels.push(p);
+      }
+    }
+  }
+  return outlinePixels;
+}
+
 function drawDebug() {
-  const show = $("#showDebug").checked;
+  const showProtected = $("#showDebug").checked;
+  const showOutline = showRegionOutline;
   const c0 = $("#c0"),
     c1 = $("#c1"),
     d0 = $("#dbg0"),
     d1 = $("#dbg1");
-  d0.style.display = d1.style.display = show ? "block" : "none";
-  if (!show || !pixMask) return;
+
+  // Show overlay if either debug mode is enabled
+  const shouldShow =
+    (showProtected && pixMask) ||
+    (showOutline && regionIds && selectedRegion >= 0);
+  d0.style.display = d1.style.display = shouldShow ? "block" : "none";
+
+  if (!shouldShow) return;
+
   const w = c0.width,
     h = c0.height;
   [d0, d1].forEach((c) => {
     c.width = w;
     c.height = h;
   });
+
+  // Position debug overlays to match the main canvas position
+  const c0Rect = c0.getBoundingClientRect();
+  const c1Rect = c1.getBoundingClientRect();
+  const d0Parent = d0.parentElement.getBoundingClientRect();
+  const d1Parent = d1.parentElement.getBoundingClientRect();
+
+  // Calculate offset from parent container to canvas
+  const d0OffsetLeft = c0Rect.left - d0Parent.left;
+  const d0OffsetTop = c0Rect.top - d0Parent.top;
+  const d1OffsetLeft = c1Rect.left - d1Parent.left;
+  const d1OffsetTop = c1Rect.top - d1Parent.top;
+
+  // Apply positioning
+  d0.style.left = d0OffsetLeft + "px";
+  d0.style.top = d0OffsetTop + "px";
+  d0.style.width = c0Rect.width + "px";
+  d0.style.height = c0Rect.height + "px";
+
+  d1.style.left = d1OffsetLeft + "px";
+  d1.style.top = d1OffsetTop + "px";
+  d1.style.width = c1Rect.width + "px";
+  d1.style.height = c1Rect.height + "px";
   const ctx0 = d0.getContext("2d"),
     ctx1 = d1.getContext("2d");
   const img0 = ctx0.createImageData(w, h),
     img1 = ctx1.createImageData(w, h);
   const A0 = img0.data,
     A1 = img1.data;
+
+  // Clear the image data
+  A0.fill(0);
+  A1.fill(0);
+
   const activeRid = selectedRegion >= 0 ? selectedRegion : -1;
-  for (let p = 0, i = 0; p < pixMask.length; p++, i += 4) {
-    if (pixMask[p] !== 2) continue;
-    const editable =
-      $("#editProtected").checked && regionIds && regionIds[p] === activeRid;
-    const R = editable ? 60 : 220,
-      G = editable ? 220 : 60,
-      B = 60,
-      AA = 110;
-    A0[i] = R;
-    A0[i + 1] = G;
-    A0[i + 2] = B;
-    A0[i + 3] = AA;
-    A1[i] = R;
-    A1[i + 1] = G;
-    A1[i + 2] = B;
-    A1[i + 3] = AA;
+
+  // Draw protected pixels overlay
+  if (showProtected && pixMask) {
+    for (let p = 0, i = 0; p < pixMask.length; p++, i += 4) {
+      if (pixMask[p] !== 2) continue;
+      const editable =
+        $("#editProtected").checked && regionIds && regionIds[p] === activeRid;
+      const R = editable ? 60 : 220,
+        G = editable ? 220 : 60,
+        B = 60,
+        AA = 110;
+      A0[i] = R;
+      A0[i + 1] = G;
+      A0[i + 2] = B;
+      A0[i + 3] = AA;
+      A1[i] = R;
+      A1[i + 1] = G;
+      A1[i + 2] = B;
+      A1[i + 3] = AA;
+    }
   }
+
+  // Draw selected region outline
+  if (showOutline && regionIds && activeRid >= 0) {
+    const outlinePixels = getRegionOutlinePixels(activeRid, w, h);
+    for (const p of outlinePixels) {
+      const i = p * 4;
+      // Use bright magenta for the outline to be highly visible
+      A0[i] = 255; // R
+      A0[i + 1] = 0; // G
+      A0[i + 2] = 255; // B
+      A0[i + 3] = 220; // A
+      A1[i] = 255; // R
+      A1[i + 1] = 0; // G
+      A1[i + 2] = 255; // B
+      A1[i + 3] = 220; // A
+    }
+  }
+
   ctx0.putImageData(img0, 0, 0);
   ctx1.putImageData(img1, 0, 0);
 }
@@ -1919,6 +2190,7 @@ const HK_DEFAULT = {
   recluster: "r",
   debug: "d",
   editProt: "e",
+  outline: "o",
   pickPrev: "p",
   pickTex: "t",
   pickApply: "a",
@@ -1927,6 +2199,7 @@ const HK_DEFAULT = {
   keep: "k",
   prevPokemon: ",",
   nextPokemon: ".",
+  zoom: "z",
 };
 function loadHK() {
   try {
@@ -1986,6 +2259,13 @@ function applyHKBindings() {
       drawDebug();
       return;
     }
+    if (k === HK.outline) {
+      e.preventDefault();
+      $("#showRegionOutline").checked = !$("#showRegionOutline").checked;
+      showRegionOutline = $("#showRegionOutline").checked;
+      drawDebug();
+      return;
+    }
     if (k === HK.editProt) {
       e.preventDefault();
       $("#editProtected").checked = !$("#editProtected").checked;
@@ -2038,6 +2318,11 @@ function applyHKBindings() {
       navigatePokemon(1);
       return;
     }
+    if (k === HK.zoom) {
+      e.preventDefault();
+      toggleZoomMode();
+      return;
+    }
     if (k === "ArrowLeft") {
       e.preventDefault();
       bumpDark(-1);
@@ -2076,6 +2361,7 @@ function openHotkeyModal() {
   keyCaptureInput($("#hkSave"), "save");
   keyCaptureInput($("#hkRecluster"), "recluster");
   keyCaptureInput($("#hkDebug"), "debug");
+  keyCaptureInput($("#hkOutline"), "outline");
   keyCaptureInput($("#hkEditProt"), "editProt");
   keyCaptureInput($("#hkPickPrev"), "pickPrev");
   keyCaptureInput($("#hkPickTex"), "pickTex");
@@ -2085,7 +2371,8 @@ function openHotkeyModal() {
   keyCaptureInput($("#hkKeep"), "keep");
   keyCaptureInput($("#hkPrevPokemon"), "prevPokemon");
   keyCaptureInput($("#hkNextPokemon"), "nextPokemon");
-  $("#hotkeyModal").style.display = "block";
+  keyCaptureInput($("#hkZoom"), "zoom");
+  $("#hotkeyModal").style.display = "flex";
 }
 $("#saveHotkeys").onclick = () => {
   saveHK(HK);
@@ -2096,6 +2383,13 @@ $("#saveHotkeys").onclick = () => {
 $("#closeHotkeyModal").onclick = () =>
   ($("#hotkeyModal").style.display = "none");
 $("#hotkeyBtn").onclick = () => openHotkeyModal();
+
+// Close modal when clicking outside the content
+$("#hotkeyModal").onclick = (e) => {
+  if (e.target === $("#hotkeyModal")) {
+    $("#hotkeyModal").style.display = "none";
+  }
+};
 applyHKBindings();
 function stepRegion(dir) {
   if (!regions.length) return;

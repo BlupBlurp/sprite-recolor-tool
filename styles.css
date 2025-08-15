@@ -130,8 +130,6 @@ canvas {
   position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
-  height: 100%;
   pointer-events: none;
   mix-blend-mode: multiply;
   display: none;
@@ -281,4 +279,105 @@ input[type="color"] {
   border: 1px solid #334155;
   border-radius: 8px;
   height: 34px;
+}
+
+/* Zoom overlay styling */
+.zoomOverlay {
+  position: fixed !important;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px solid #111;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2) inset, 0 4px 12px rgba(0, 0, 0, 0.5);
+  background: #000;
+  display: none;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1000;
+  backdrop-filter: blur(1px);
+}
+
+.zoomOverlay canvas {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* Make canvas wrappers relative for zoom overlay positioning */
+.canvasWrap {
+  position: relative;
+}
+
+/* Hotkey Modal Specific Styles */
+#hotkeyModal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#hotkeyModal.show {
+  display: flex;
+}
+
+#hotkeyModal .sheet-content {
+  background: #0b1020;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+#hotkeyModal .kv {
+  grid-template-columns: 200px 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+#hotkeyModal .kv label {
+  color: var(--fg);
+  font-weight: 500;
+  padding: 8px 0;
+}
+
+#hotkeyModal .kv input[type="text"] {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  background: var(--card);
+  border: 1px solid var(--bd);
+  color: var(--fg);
+}
+
+#hotkeyModal .kv input[type="text"]:focus {
+  outline: none;
+  border-color: var(--acc);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+#hotkeyModal .section {
+  margin-bottom: 20px;
+}
+
+#hotkeyModal .section:last-child {
+  margin-bottom: 0;
+  text-align: center;
+}
+
+#hotkeyModal .row {
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
