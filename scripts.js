@@ -699,7 +699,6 @@ let forceEditProtected = false,
   pickedColorForApply = null; // New state for pick & apply mode
 let contrastFactor = 1.1; // 110%
 let colorConsensusCount = 1; // Number of candidates to consider for consensus
-let debugColorConsensus = false; // Enable debug logging for color consensus
 let zoomMode = false; // Zoom feature state
 let showRegionOutline = false; // Show selected region outline
 
@@ -754,12 +753,6 @@ $("#editProtected").onchange = (e) => {
 };
 $("#showDebug").onchange = (e) => {
   drawDebug();
-};
-$("#debugColorConsensus").onchange = (e) => {
-  debugColorConsensus = e.target.checked;
-  if (debugColorConsensus) {
-    console.log("Color consensus debugging enabled");
-  }
 };
 $("#showRegionOutline").onchange = (e) => {
   showRegionOutline = e.target.checked;
@@ -1173,28 +1166,11 @@ function suggest(centerLab) {
       }
     }
     // console.log(`Fallback used for color [${centerLab.map(x => x.toFixed(1)).join(', ')}], distance: ${bd.toFixed(2)}`);
-    if (debugColorConsensus) {
-      console.log(
-        `Fallback: No close candidates for LAB [${centerLab
-          .map((x) => x.toFixed(1))
-          .join(", ")}], using closest with distance ${bd.toFixed(2)}`
-      );
-    }
     return best.sLab.slice();
   }
 
   // Debug logging (uncomment for development)
   // console.log(`Color consensus for [${centerLab.map(x => x.toFixed(1)).join(', ')}]: ${candidates.length} candidates, using top ${Math.min(colorConsensusCount, candidates.length)}`);
-  if (debugColorConsensus) {
-    console.log(
-      `Consensus: Found ${candidates.length} candidates for LAB [${centerLab
-        .map((x) => x.toFixed(1))
-        .join(", ")}], using top ${Math.min(
-        colorConsensusCount,
-        candidates.length
-      )}`
-    );
-  }
 
   // Sort candidates by score (higher is better)
   candidates.sort((a, b) => b.score - a.score);
@@ -1244,14 +1220,6 @@ function suggest(centerLab) {
     weightedA / totalWeight,
     weightedB / totalWeight,
   ];
-
-  if (debugColorConsensus) {
-    console.log(
-      `  → Final consensus: LAB [${result
-        .map((x) => x.toFixed(1))
-        .join(", ")}] from ${topCandidates.length} textures`
-    );
-  }
 
   return result;
 }
@@ -1521,7 +1489,8 @@ $("#sheetColor").oninput = (e) => {
   if (link) link.checked = false;
   const sw = $("#pickedSwatch");
   if (sw) sw.style.background = e.target.value;
-  render();
+  applyShiny();
+  renderPanel();
 };
 $("#sheetRevert").onclick = () => {
   const R = regions[selectedRegion];
