@@ -679,7 +679,7 @@ let texPairs = {},
 let sprite = null,
   width = 0,
   height = 0;
-let kFamilies = 14,
+let kFamilies = 32,
   spatialW = 0.6,
   PROTECT_NEAR_BLACK = 8;
 let pixLabs = null,
@@ -698,7 +698,7 @@ let forceEditProtected = false,
   pickMode = null,
   pickedColorForApply = null; // New state for pick & apply mode
 let contrastFactor = 1.1; // 110%
-let colorConsensusCount = 3; // Number of candidates to consider for consensus
+let colorConsensusCount = 1; // Number of candidates to consider for consensus
 let debugColorConsensus = false; // Enable debug logging for color consensus
 let zoomMode = false; // Zoom feature state
 let showRegionOutline = false; // Show selected region outline
@@ -768,6 +768,40 @@ $("#showRegionOutline").onchange = (e) => {
 
 // Initialize the state based on checkbox
 showRegionOutline = $("#showRegionOutline").checked;
+
+/* ===== Initialize slider values ===== */
+function initializeSliderValues() {
+  // Sync slider values with JavaScript variables and update display spans
+  $("#k").value = kFamilies;
+  $("#kVal").textContent = kFamilies;
+
+  $("#ink").value = PROTECT_NEAR_BLACK;
+  $("#inkVal").textContent = PROTECT_NEAR_BLACK;
+
+  $("#smoothPx").value = $("#smoothPx").value; // Keep HTML default
+  $("#smoothPxVal").textContent = $("#smoothPx").value;
+
+  $("#smoothAmt").value = 45; // Ensure blending is set to 45%
+  $("#smoothAmtVal").textContent = "45%";
+
+  $("#contrast").value = Math.round(contrastFactor * 100);
+  $("#contrastVal").textContent = Math.round(contrastFactor * 100) + "%";
+
+  $("#colorConsensus").value = colorConsensusCount;
+  $("#colorConsensusVal").textContent = colorConsensusCount;
+
+  // Handle spatial weight if it exists
+  const spwEl = $("#spw");
+  if (spwEl) {
+    spwEl.value = Math.round(spatialW * 100);
+    const spwVal = $("#spwVal");
+    if (spwVal) spwVal.textContent = spatialW.toFixed(2);
+  }
+}
+
+// Initialize slider values on page load
+initializeSliderValues();
+
 $("#recluster").onclick = () => {
   if (!sprite) return;
 
