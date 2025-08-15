@@ -553,7 +553,8 @@ let regions = [],
   selectedRegion = -1;
 let forceEditProtected = false,
   regionDark = {},
-  pickMode = null;
+  pickMode = null,
+  pickedColorForApply = null; // New state for pick & apply mode
 let contrastFactor = 1.1; // 110%
 
 /* ===== sliders/toggles ===== */
@@ -694,6 +695,7 @@ function drawSprite() {
   const c0 = $("#c0");
   width = c0.width = sprite.naturalWidth;
   height = c0.height = sprite.naturalHeight;
+
   const x0 = c0.getContext("2d");
   x0.imageSmoothingEnabled = false;
   x0.drawImage(sprite, 0, 0);
@@ -768,6 +770,7 @@ function computeFamiliesAndRegions() {
     st("No sprite");
     return;
   }
+
   const pts = [],
     idxs = [];
   for (let p = 0; p < pixLabs.length; p++) {
@@ -907,6 +910,15 @@ const labToHex = (Lab) => {
 };
 function renderPanel() {
   /* removed Families & Regions UI */
+  
+  // Update region panel based on current selection
+  if (selectedRegion >= 0 && regions[selectedRegion] && !regions[selectedRegion].deleted) {
+    openSheet(selectedRegion);
+  } else {
+    // No region selected or invalid selection
+    $("#sheetTitle").textContent = "No region selected";
+    $("#pickedSwatch").style.background = "#000";
+  }
 }
 function openSheet(rid) {
   selectedRegion = rid;
@@ -932,27 +944,60 @@ function openSheet(rid) {
 })();
 $("#sheetLink").onchange = (e) => {
   const R = regions[selectedRegion];
-  if (!R) return;
+  if (!R || R.deleted) return;
   R.linked = e.target.checked;
-  if (R.linked) R.lab = null;
+  if (R.linked) {
+    R.lab = null;
+
+    // If this is a pixel region, merge it back to the original family region
+    if (R.isPixelRegion && R.originalFam !== undefined) {
+      // Find the original family region
+      let originalRegionId = -1;
+      for (let i = 0; i < regions.length; i++) {
+        if (regions[i].fam === R.originalFam && !regions[i].isPixelRegion) {
+          originalRegionId = i;
+          break;
+        }
+      }
+
+      if (originalRegionId >= 0) {
+        // Update all pixels that belong to this pixel region to use the original region
+        if (regionIds) {
+          for (let p = 0; p < regionIds.length; p++) {
+            if (regionIds[p] === selectedRegion) {
+              regionIds[p] = originalRegionId;
+            }
+          }
+        }
+
+        // Remove the pixel region from the regions array (mark as deleted)
+        R.deleted = true;
+
+        // Switch selection to the original region
+        selectedRegion = originalRegionId;
+        renderPanel();
+        openSheet(selectedRegion);
+      }
+    }
+  }
   renderPanel();
   applyShiny();
 };
 $("#sheetKeep").onchange = (e) => {
   const R = regions[selectedRegion];
-  if (!R) return;
+  if (!R || R.deleted) return;
   R.keep = e.target.checked;
   applyShiny();
 };
 $("#sheetLock").onchange = (e) => {
   const R = regions[selectedRegion];
-  if (!R) return;
+  if (!R || R.deleted) return;
   R.lock = e.target.checked;
 };
 $("#sheetColor").oninput = (e) => {
   const rid = selectedRegion;
   const R = regions[rid];
-  if (!R) return;
+  if (!R || R.deleted) return;
   const [r, g, b] = unhex(e.target.value);
   R.lab = rgbToLab(r, g, b);
   R.linked = false;
@@ -964,7 +1009,7 @@ $("#sheetColor").oninput = (e) => {
 };
 $("#sheetRevert").onclick = () => {
   const R = regions[selectedRegion];
-  if (!R || R.keep) return;
+  if (!R || R.deleted || R.keep) return;
   if (R.linked) famShinyLab[R.fam] = famAutoLab[R.fam].slice();
   else {
     R.lab = null;
@@ -1003,6 +1048,24 @@ $("#c0").onclick = (e) => {
     const pix = ctx.getImageData(x, y, 1, 1).data;
     const a = pix[3];
     if (!a) return; // ignore transparent clicks
+
+    // Handle Pick & Apply mode
+    if (pickMode === "pickAndApply") {
+      const [rr, gg, bb] = [pix[0], pix[1], pix[2]];
+      pickedColorForApply = rgbToLab(rr, gg, bb);
+      const colorHex = hex(rr, gg, bb);
+
+      // Show the picked color
+      document.getElementById("pickedColorForApply").style.display = "flex";
+      document.getElementById("pickedColorSwatch").style.background = colorHex;
+
+      st(
+        "Color picked! Now click on Shiny to apply to region. Pick & Apply mode active."
+      );
+      return;
+    }
+
+    // Original functionality - direct color picking for selected region
     if (
       selectedRegion == null ||
       selectedRegion < 0 ||
@@ -1046,6 +1109,82 @@ $("#c1").onclick = (e) => {
     }
     pickMode = null;
     st("Picked from preview");
+  } else if (pickMode === "pickAndApply" && pickedColorForApply) {
+    // Handle Pick & Apply mode - apply picked color to clicked region or pixel
+    const c = $("#c1");
+    const r = c.getBoundingClientRect();
+    const x = Math.floor(((e.clientX - r.left) * c.width) / r.width);
+    const y = Math.floor(((e.clientY - r.top) * c.height) / r.height);
+    const pixelIndex = y * width + x;
+
+    const rid = regionAtCanvas($("#c1"), e.clientX, e.clientY);
+    if (rid >= 0) {
+      const R = regions[rid];
+      if (R && !R.lock && !R.keep) {
+        const isPixelLevelMode =
+          document.getElementById("pixelLevelMode").checked;
+
+        if (isPixelLevelMode) {
+          // Create a new region for this individual pixel
+          const newRid = regions.length;
+          const originalFam = R.fam;
+
+          // Create new region for this pixel
+          const newRegion = {
+            id: newRid,
+            fam: originalFam, // Keep original family reference for potential re-linking
+            originalFam: originalFam, // Store original family for re-linking
+            linked: false,
+            keep: false,
+            lock: false,
+            lab: pickedColorForApply.slice(),
+            isPixelRegion: true, // Mark as pixel-level region
+          };
+
+          regions.push(newRegion);
+          regionDark[newRid] = 0;
+
+          // Update this specific pixel to belong to the new region
+          regionIds[pixelIndex] = newRid;
+
+          // Update UI
+          selectedRegion = newRid;
+          const col = labToHex(newRegion.lab);
+          $("#sheetColor").value = col;
+          $("#pickedSwatch").style.background = col;
+          $("#sheetLink").checked = false;
+
+          renderPanel();
+          openSheet(newRid);
+          applyShiny();
+          st(
+            `Applied picked color to individual pixel. Pick & Apply mode still active.`
+          );
+        } else {
+          // Apply the picked color to entire region (original behavior)
+          R.lab = pickedColorForApply.slice(); // Clone the color
+          R.linked = false;
+
+          // Update UI
+          selectedRegion = rid;
+          const col = labToHex(R.lab);
+          $("#sheetColor").value = col;
+          $("#pickedSwatch").style.background = col;
+          $("#sheetLink").checked = false;
+
+          renderPanel();
+          openSheet(rid);
+          applyShiny();
+          st(
+            `Applied picked color to region #${rid}. Pick & Apply mode still active.`
+          );
+        }
+      } else {
+        st("Cannot apply to locked or kept regions");
+      }
+    } else {
+      st("Click on a valid region");
+    }
   } else {
     const rid = regionAtCanvas($("#c1"), e.clientX, e.clientY);
     if (rid >= 0) {
@@ -1074,6 +1213,36 @@ document.getElementById("pickFromTexture").onclick = () => {
 document.getElementById("pickFromPreview").onclick = () => {
   pickMode = "preview";
   st("Tap shiny preview to pick");
+};
+
+// New Pick & Apply functionality
+document.getElementById("colorPickAndApply").onclick = () => {
+  if (pickMode === "pickAndApply") {
+    // Disable mode
+    pickMode = null;
+    pickedColorForApply = null;
+    document.getElementById("colorPickAndApply").textContent = "Apply Multiple";
+    document.getElementById("colorPickAndApply").style.background = "";
+    document.getElementById("pickedColorForApply").style.display = "none";
+    // Hide the individual pixels toggle
+    document.getElementById("pixelLevelMode").parentElement.style.display =
+      "none";
+    st("Apply Multiple mode disabled");
+  } else {
+    // Enable mode
+    pickMode = "pickAndApply";
+    pickedColorForApply = null;
+    selectedRegion = -1; // Clear selection to prevent applying to previously selected region
+    document.getElementById("colorPickAndApply").textContent = "Cancel";
+    document.getElementById("colorPickAndApply").style.background =
+      "var(--acc)";
+    document.getElementById("pickedColorForApply").style.display = "none";
+    // Show the individual pixels toggle
+    document.getElementById("pixelLevelMode").parentElement.style.display =
+      "inline-block";
+    renderPanel(); // Update UI to reflect no region selected
+    st("Apply Multiple mode: Click Original to pick color");
+  }
 };
 
 function openTexOverlayWithObj(obj) {
@@ -1442,7 +1611,7 @@ function applyShiny() {
       continue;
     }
     const R = regions[rid];
-    if (!R) {
+    if (!R || R.deleted) {
       D[i] = r;
       D[i + 1] = g;
       D[i + 2] = b;
@@ -1456,6 +1625,7 @@ function applyShiny() {
       D[i + 3] = a;
       continue;
     }
+
     const base = R.linked || !R.lab ? famShinyLab[fam] : R.lab;
 
     // Lightness remap (preserve relative shading) + per-region ΔL + global contrast
@@ -1624,6 +1794,7 @@ const HK_DEFAULT = {
   editProt: "e",
   pickPrev: "p",
   pickTex: "t",
+  pickApply: "a",
   prevReg: "[",
   nextReg: "]",
   keep: "k",
@@ -1706,6 +1877,11 @@ function applyHKBindings() {
       document.getElementById("pickFromTexture").click();
       return;
     }
+    if (k === HK.pickApply) {
+      e.preventDefault();
+      document.getElementById("colorPickAndApply").click();
+      return;
+    }
     if (k === HK.prevReg) {
       e.preventDefault();
       stepRegion(-1);
@@ -1776,6 +1952,7 @@ function openHotkeyModal() {
   keyCaptureInput($("#hkEditProt"), "editProt");
   keyCaptureInput($("#hkPickPrev"), "pickPrev");
   keyCaptureInput($("#hkPickTex"), "pickTex");
+  keyCaptureInput($("#hkPickApply"), "pickApply");
   keyCaptureInput($("#hkPrevReg"), "prevReg");
   keyCaptureInput($("#hkNextReg"), "nextReg");
   keyCaptureInput($("#hkKeep"), "keep");

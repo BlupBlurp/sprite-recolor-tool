@@ -165,6 +165,18 @@
           <legend>Region</legend>
           <div class="row">
             <h3 id="sheetTitle">Region</h3>
+            <span
+              id="pickedSwatch"
+              style="
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                border: 1px solid #444;
+                border-radius: 4px;
+                background: #000;
+                margin-left: 8px;
+              "
+            ></span>
           </div>
           <div class="section">
             <div class="row" style="gap: 8px; flex-wrap: wrap">
@@ -175,7 +187,7 @@
               >
               <span class="pill"
                 ><input id="sheetLink" type="checkbox" checked /><span
-                  >Link to family</span
+                  >Link to family (clears individual pixels)</span
                 ></span
               >
               <span class="pill"
@@ -217,6 +229,20 @@
               >
                 🎯 Pick from texture
               </button>
+              <button
+                id="colorPickAndApply"
+                class="btn gray"
+                title="Pick color from Original, then click on Shiny to apply"
+              >
+                Apply Multiple
+              </button>
+              <label
+                class="toggle"
+                style="font-size: 12px; margin-left: 4px; display: none"
+              >
+                <input id="pixelLevelMode" type="checkbox" />
+                Individual pixels
+              </label>
               <select
                 id="texChooser"
                 style="display: none; padding: 8px 10px"
@@ -225,16 +251,31 @@
                 <option value="">(choose shiny texture)</option>
               </select>
               <span
-                id="pickedSwatch"
+                id="pickedColorForApply"
                 style="
-                  display: inline-block;
-                  width: 20px;
-                  height: 20px;
-                  border: 1px solid #444;
+                  display: none;
+                  align-items: center;
+                  gap: 4px;
+                  padding: 4px 8px;
+                  background: var(--bg2);
+                  border: 1px solid var(--bd);
                   border-radius: 4px;
-                  background: #000;
+                  font-size: 12px;
                 "
-              ></span>
+              >
+                <span
+                  id="pickedColorSwatch"
+                  style="
+                    display: inline-block;
+                    width: 16px;
+                    height: 16px;
+                    border: 1px solid #444;
+                    border-radius: 2px;
+                    background: #000;
+                  "
+                ></span>
+                <span>Picked</span>
+              </span>
             </div>
           </div>
         </fieldset>
@@ -243,37 +284,6 @@
           <legend>Home Texture Preview</legend>
           <div>
             <div class="canvasWrap" style="margin-bottom: 16px">
-              <legend
-                style="font-size: 12px; color: var(--mut); margin-bottom: 4px"
-              >
-                Normal
-              </legend>
-              <canvas
-                id="homeTextureCanvasNormal"
-                style="
-                  background: #fff;
-                  width: 100%;
-                  max-width: auto;
-                  height: auto;
-                  border: 1px solid var(--bd);
-                  border-radius: 10px;
-                  image-rendering: pixelated;
-                  display: none;
-                "
-              ></canvas>
-              <div
-                id="homeTextureStatusNormal"
-                style="
-                  color: var(--mut);
-                  font-size: 12px;
-                  text-align: center;
-                  padding: 8px;
-                "
-              >
-                No normal home texture
-              </div>
-            </div>
-            <div class="canvasWrap">
               <legend
                 style="font-size: 12px; color: var(--mut); margin-bottom: 4px"
               >
@@ -302,6 +312,37 @@
                 "
               >
                 No shiny home texture
+              </div>
+            </div>
+            <div class="canvasWrap">
+              <legend
+                style="font-size: 12px; color: var(--mut); margin-bottom: 4px"
+              >
+                Normal
+              </legend>
+              <canvas
+                id="homeTextureCanvasNormal"
+                style="
+                  background: #fff;
+                  width: 100%;
+                  max-width: auto;
+                  height: auto;
+                  border: 1px solid var(--bd);
+                  border-radius: 10px;
+                  image-rendering: pixelated;
+                  display: none;
+                "
+              ></canvas>
+              <div
+                id="homeTextureStatusNormal"
+                style="
+                  color: var(--mut);
+                  font-size: 12px;
+                  text-align: center;
+                  padding: 8px;
+                "
+              >
+                No normal home texture
               </div>
             </div>
           </div>
@@ -333,6 +374,8 @@
           ><input id="hkPickPrev" type="text" placeholder="p" />
           <label>Pick from Texture</label
           ><input id="hkPickTex" type="text" placeholder="t" />
+          <label>Apply Multiple</label
+          ><input id="hkPickApply" type="text" placeholder="a" />
           <label>Prev Region</label
           ><input id="hkPrevReg" type="text" placeholder="[" />
           <label>Next Region</label
