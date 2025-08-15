@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>
+      BDSP Shiny Builder — Folder UI (Dark • white canvases + Hotkeys + Dex
+      names)
+    </title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>BDSP Shiny Builder — Folder UI</h1>
+      <div class="controls">
+        <label class="btn"
+          ><input
+            id="pickRoot"
+            type="file"
+            webkitdirectory
+            multiple
+            accept="image/*"
+          />Pick Root Folder</label
+        >
+        <button id="saveBtn" class="btn gray">Save PNG</button>
+        <button id="hotkeyBtn" class="btn gray">Hotkeys</button>
+
+        <div id="status">Idle</div>
+      </div>
+      <small
+        >Root contains folders like <code>pm####_##_##/</code>. Inside: textures
+        and an <code>icon/</code> folder with sprites.</small
+      >
+    </header>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="card">
+        <fieldset>
+          <legend>Pokemon</legend>
+          <div class="kv kv-onecol">
+            <div class="row" style="gap: 4px">
+              <select id="folderSel" style="flex: 1">
+                <option value="">(pick root)</option>
+              </select>
+              <button
+                id="prevPokemon"
+                class="btn gray"
+                style="padding: 6px 8px; font-size: 14px"
+                title="Previous Pokémon"
+              >
+                ‹
+              </button>
+              <button
+                id="nextPokemon"
+                class="btn gray"
+                style="padding: 6px 8px; font-size: 14px"
+                title="Next Pokémon"
+              >
+                ›
+              </button>
+            </div>
+            <div id="texList" class="list">
+              <small
+                >Select normal <code>*_col.png</code>. Matching
+                <code>*_col_rare</code> is used internally.</small
+              >
+            </div>
+            <select id="spriteSel">
+              <option value="">(icon/*.png)</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top: 8px">
+            <button id="loadBtn" class="btn">Load Selected</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Defaults</legend>
+          <div class="kv">
+            <label>Family Count</label
+            ><input id="k" type="range" min="5" max="48" value="14" /><span
+              id="kVal"
+              >14</span
+            >
+            <label class="mut" style="display: none">Spatial weight</label
+            ><input
+              id="spw"
+              style="display: none"
+              type="range"
+              min="0"
+              max="200"
+              value="60"
+            /><span id="spwVal" style="display: none">0.60</span>
+            <label>Protect Outline</label
+            ><input id="ink" type="range" min="0" max="48" value="8" /><span
+              id="inkVal"
+              >8</span
+            >
+            <label>Smoothing</label
+            ><input id="smoothPx" type="range" min="0" max="5" value="1" /><span
+              id="smoothPxVal"
+              >1</span
+            >
+            <label>Blending</label
+            ><input
+              id="smoothAmt"
+              type="range"
+              min="0"
+              max="100"
+              value="45"
+            /><span id="smoothAmtVal">45%</span> <label>Contrast</label
+            ><input
+              id="contrast"
+              type="range"
+              min="50"
+              max="170"
+              value="110"
+            /><span id="contrastVal">110%</span>
+          </div>
+          <hr />
+          <div class="row">
+            <label class="toggle"
+              ><input id="editProtected" type="checkbox" /> Edit protected
+              pixels (selected region)</label
+            >
+            <label class="toggle"
+              ><input id="showDebug" type="checkbox" /> Show protected
+              overlay</label
+            >
+            <button id="recluster" class="btn gray">Recluster</button>
+          </div>
+        </fieldset>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="card">
+        <div class="preview">
+          <div class="canvasWrap">
+            <fieldset>
+              <legend>Original</legend>
+              <canvas id="c0"></canvas>
+              <div class="row">
+                <select id="sourceSel" class="btn gray">
+                  <option value="">
+                    (choose source image: textures & sprites)
+                  </option>
+                </select>
+              </div>
+            </fieldset>
+            <canvas id="dbg0" class="debugOverlay"></canvas>
+          </div>
+          <div class="canvasWrap">
+            <fieldset>
+              <legend>Shiny (live)</legend>
+              <canvas id="c1"></canvas>
+            </fieldset>
+            <canvas id="cGuide" style="display: none"></canvas>
+            <canvas id="dbg1" class="debugOverlay"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <fieldset>
+          <legend>Region</legend>
+          <div class="row">
+            <h3 id="sheetTitle">Region</h3>
+          </div>
+          <div class="section">
+            <div class="row" style="gap: 8px; flex-wrap: wrap">
+              <span class="pill"
+                ><input id="sheetColor" type="color" value="#000000" /><span
+                  >Manual color</span
+                ></span
+              >
+              <span class="pill"
+                ><input id="sheetLink" type="checkbox" checked /><span
+                  >Link to family</span
+                ></span
+              >
+              <span class="pill"
+                ><input id="sheetKeep" type="checkbox" /><span
+                  >Keep original</span
+                ></span
+              >
+              <span class="pill"
+                ><input id="sheetLock" type="checkbox" /><span>Lock</span></span
+              >
+              <button id="sheetRevert" class="btn gray">↺ Revert</button>
+            </div>
+          </div>
+          <div class="section">
+            <div class="kv">
+              <label>Darkness (ΔL)</label>
+              <input
+                id="sheetDark"
+                type="range"
+                min="-40"
+                max="40"
+                value="0"
+              /><span id="sheetDarkVal">0</span>
+            </div>
+          </div>
+          <div class="section">
+            <div class="row" style="gap: 8px; flex-wrap: wrap">
+              <button
+                id="pickFromPreview"
+                class="btn gray"
+                style="display: none"
+              >
+                🎯 Pick from preview
+              </button>
+              <button
+                id="pickFromTexture"
+                class="btn gray"
+                style="display: none"
+              >
+                🎯 Pick from texture
+              </button>
+              <select
+                id="texChooser"
+                style="display: none; padding: 8px 10px"
+                class="btn gray"
+              >
+                <option value="">(choose shiny texture)</option>
+              </select>
+              <span
+                id="pickedSwatch"
+                style="
+                  display: inline-block;
+                  width: 20px;
+                  height: 20px;
+                  border: 1px solid #444;
+                  border-radius: 4px;
+                  background: #000;
+                "
+              ></span>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Home Texture Preview</legend>
+          <div>
+            <div class="canvasWrap" style="margin-bottom: 16px">
+              <legend
+                style="font-size: 12px; color: var(--mut); margin-bottom: 4px"
+              >
+                Normal
+              </legend>
+              <canvas
+                id="homeTextureCanvasNormal"
+                style="
+                  background: #fff;
+                  width: 100%;
+                  max-width: auto;
+                  height: auto;
+                  border: 1px solid var(--bd);
+                  border-radius: 10px;
+                  image-rendering: pixelated;
+                  display: none;
+                "
+              ></canvas>
+              <div
+                id="homeTextureStatusNormal"
+                style="
+                  color: var(--mut);
+                  font-size: 12px;
+                  text-align: center;
+                  padding: 8px;
+                "
+              >
+                No normal home texture
+              </div>
+            </div>
+            <div class="canvasWrap">
+              <legend
+                style="font-size: 12px; color: var(--mut); margin-bottom: 4px"
+              >
+                Shiny
+              </legend>
+              <canvas
+                id="homeTextureCanvas"
+                style="
+                  background: #fff;
+                  width: 100%;
+                  max-width: auto;
+                  height: auto;
+                  border: 1px solid var(--bd);
+                  border-radius: 10px;
+                  image-rendering: pixelated;
+                  display: none;
+                "
+              ></canvas>
+              <div
+                id="homeTextureStatus"
+                style="
+                  color: var(--mut);
+                  font-size: 12px;
+                  text-align: center;
+                  padding: 8px;
+                "
+              >
+                No shiny home texture
+              </div>
+            </div>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- Hotkeys Modal -->
+    <div id="hotkeyModal" class="sheet">
+      <div class="row">
+        <h3>Hotkey Settings</h3>
+        <button id="closeHotkeyModal" class="btn gray">Close</button>
+      </div>
+      <div class="section">
+        <div class="kv">
+          <label>Open Hotkeys</label
+          ><input id="hkOpen" type="text" placeholder="?" />
+          <label>Load Selected</label
+          ><input id="hkLoad" type="text" placeholder="l" />
+          <label>Save PNG</label
+          ><input id="hkSave" type="text" placeholder="s" />
+          <label>Recluster</label
+          ><input id="hkRecluster" type="text" placeholder="r" />
+          <label>Toggle Debug</label
+          ><input id="hkDebug" type="text" placeholder="d" />
+          <label>Toggle Edit-Protected</label
+          ><input id="hkEditProt" type="text" placeholder="e" />
+          <label>Pick from Preview</label
+          ><input id="hkPickPrev" type="text" placeholder="p" />
+          <label>Pick from Texture</label
+          ><input id="hkPickTex" type="text" placeholder="t" />
+          <label>Prev Region</label
+          ><input id="hkPrevReg" type="text" placeholder="[" />
+          <label>Next Region</label
+          ><input id="hkNextReg" type="text" placeholder="]" />
+          <label>Keep Original (region)</label
+          ><input id="hkKeep" type="text" placeholder="k" />
+          <label>Previous Pokémon</label
+          ><input id="hkPrevPokemon" type="text" placeholder="," />
+          <label>Next Pokémon</label
+          ><input id="hkNextPokemon" type="text" placeholder="." />
+        </div>
+      </div>
+      <div class="section">
+        <button id="saveHotkeys" class="btn">Save Hotkeys</button>
+      </div>
+    </div>
+
+    <!-- Texture Eyedropper -->
+    <div
+      id="pickerOverlay"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #0006;
+        backdrop-filter: blur(1px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+      "
+    >
+      <div style="position: relative; max-width: 96vw; max-height: 70vh">
+        <canvas
+          id="texCanvas"
+          style="
+            max-width: 96vw;
+            max-height: 70vh;
+            background: #fff;
+            border: 1px solid #94a3b8;
+            touch-action: none;
+          "
+        ></canvas>
+        <div
+          id="loupe"
+          style="
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid #111;
+            box-shadow: 0 0 0 2px #0003 inset;
+            background: #000;
+            display: none;
+            pointer-events: none;
+            overflow: hidden;
+          "
+        >
+          <canvas
+            id="loupeCanvas"
+            width="120"
+            height="120"
+            style="width: 100%; height: 100%; image-rendering: pixelated"
+          ></canvas>
+        </div>
+      </div>
+      <div
+        style="
+          margin-top: 8px;
+          display: flex;
+          gap: 8px;
+          align-items: center;
+          flex-wrap: wrap;
+          justify-content: center;
+        "
+      >
+        <button id="pickerDone" class="btn gray">Done</button>
+        <button id="pickerCancel" class="btn gray">Cancel</button>
+        <span class="mut" style="color: #e5e7eb"
+          >Tap/drag to sample. Sets this region’s shiny base (if unlinked & not
+          kept).</span
+        >
+      </div>
+    </div>
+
+    <script type="module">
+      import "./scripts.js";
+    </script>
+  </body>
+</html>
