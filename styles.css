@@ -391,3 +391,37 @@ input[type="color"] {
   justify-content: space-between;
   margin-bottom: 16px;
 }
+
+/* Experimental section custom layout */
+.experimental-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.experimental-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.experimental-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.experimental-header label {
+  margin: 0;
+  font-weight: normal;
+}
+
+.experimental-header span {
+  color: var(--mut);
+  font-size: 13px;
+}
+
+.experimental-item input[type="range"] {
+  width: 100%;
+}

@@ -104,34 +104,59 @@
           </div>
         </fieldset>
         <fieldset>
-          <legend>Experimental</legend>
-          <div class="kv">
-            <label>Color Consensus</label
-            ><input
-              id="colorConsensus"
-              type="range"
-              min="1"
-              max="10"
-              value="1"
-              title="Number of texture candidates to consider for color suggestions. Higher values blend more textures for smoother results."
-            /><span id="colorConsensusVal">1</span> <label>Spatial Weight</label
-            ><input
-              id="spatialWeight"
-              type="range"
-              min="0"
-              max="100"
-              value="0"
-              title="Weight position similarity when matching colors. 0% = color only (current behavior), higher values consider spatial position."
-            /><span id="spatialWeightVal">0%</span>
-            <label>Color Tolerance</label
-            ><input
-              id="colorTolerance"
-              type="range"
-              min="0"
-              max="100"
-              value="0"
-              title="Allows matching distant colors with fallback strategies. 0% = strict matching (current behavior), higher values enable adaptive thresholds."
-            /><span id="colorToleranceVal">0%</span>
+          <legend
+            id="experimentalToggle"
+            style="cursor: pointer; user-select: none"
+          >
+            <span id="experimentalArrow">▶</span> Experimental
+          </legend>
+          <div
+            id="experimentalContent"
+            class="experimental-controls"
+            style="display: none"
+          >
+            <div class="experimental-item">
+              <div class="experimental-header">
+                <label>Color Consensus:</label>
+                <span id="colorConsensusVal">1</span>
+              </div>
+              <input
+                id="colorConsensus"
+                type="range"
+                min="1"
+                max="10"
+                value="1"
+                title="Number of texture candidates to consider for color suggestions. Higher values blend more textures for smoother results."
+              />
+            </div>
+            <div class="experimental-item">
+              <div class="experimental-header">
+                <label>Spatial Weight:</label>
+                <span id="spatialWeightVal">0%</span>
+              </div>
+              <input
+                id="spatialWeight"
+                type="range"
+                min="0"
+                max="100"
+                value="0"
+                title="Weight position similarity when matching colors. 0% = color only (current behavior), higher values consider spatial position."
+              />
+            </div>
+            <div class="experimental-item">
+              <div class="experimental-header">
+                <label>Color Tolerance:</label>
+                <span id="colorToleranceVal">0%</span>
+              </div>
+              <input
+                id="colorTolerance"
+                type="range"
+                min="0"
+                max="100"
+                value="0"
+                title="Allows matching distant colors with fallback strategies. 0% = strict matching (current behavior), higher values enable adaptive thresholds."
+              />
+            </div>
           </div>
         </fieldset>
         <fieldset>
@@ -188,7 +213,7 @@
                 type="text"
                 placeholder="Enter seed"
                 style="flex: 1; font-size: 12px"
-                title="Enter a seed value or extended seed (format: seed-families-outline-smooth-blend-contrast-consensus) to reproduce specific results with settings. Leave empty for random clustering."
+                title="Enter a seed value or extended seed (format: seed-families-outline-smooth-blend-contrast-consensus-spatial-tolerance) to reproduce specific results with settings. Leave empty for random clustering."
               />
             </div>
           </div>

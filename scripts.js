@@ -186,8 +186,10 @@ function createExtendedSeed() {
   const smoothPx = +$("#smoothPx").value;
   const smoothAmt = +$("#smoothAmt").value;
   const contrast = Math.round(contrastFactor * 100);
+  const spatialWeightPercent = Math.round(spatialWeight * 100);
+  const colorTolerancePercent = Math.round(colorTolerance * 100);
 
-  return `${currentSeed}-${kFamilies}-${PROTECT_NEAR_BLACK}-${smoothPx}-${smoothAmt}-${contrast}-${colorConsensusCount}`;
+  return `${currentSeed}-${kFamilies}-${PROTECT_NEAR_BLACK}-${smoothPx}-${smoothAmt}-${contrast}-${colorConsensusCount}-${spatialWeightPercent}-${colorTolerancePercent}`;
 }
 
 // Parse extended seed and apply all settings
@@ -204,7 +206,45 @@ function parseExtendedSeed(seedStr) {
     };
   }
 
-  // Extended format: seed-kFamilies-PROTECT_NEAR_BLACK-smoothPx-smoothAmt-contrast-colorConsensusCount
+  // Extended format: seed-kFamilies-PROTECT_NEAR_BLACK-smoothPx-smoothAmt-contrast-colorConsensusCount-spatialWeight-colorTolerance
+  if (parts.length === 9) {
+    const [
+      seedPart,
+      kFam,
+      protectOutline,
+      smoothPx,
+      smoothAmt,
+      contrast,
+      consensus,
+      spatialWeightPart,
+      colorTolerancePart,
+    ] = parts;
+
+    const seed = parseInt(seedPart) || hashString(seedPart);
+    const settings = {
+      kFamilies: Math.max(5, Math.min(48, parseInt(kFam) || 32)),
+      PROTECT_NEAR_BLACK: Math.max(
+        0,
+        Math.min(50, parseInt(protectOutline) || 8)
+      ),
+      smoothPx: Math.max(0, Math.min(5, parseInt(smoothPx) || 1)),
+      smoothAmt: Math.max(0, Math.min(100, parseInt(smoothAmt) || 45)),
+      contrast: Math.max(50, Math.min(170, parseInt(contrast) || 110)),
+      colorConsensusCount: Math.max(1, Math.min(10, parseInt(consensus) || 1)),
+      spatialWeight: Math.max(
+        0,
+        Math.min(100, parseInt(spatialWeightPart) || 0)
+      ),
+      colorTolerance: Math.max(
+        0,
+        Math.min(100, parseInt(colorTolerancePart) || 0)
+      ),
+    };
+
+    return { seed, settings };
+  }
+
+  // Legacy format (7 parts): seed-kFamilies-PROTECT_NEAR_BLACK-smoothPx-smoothAmt-contrast-colorConsensusCount
   if (parts.length === 7) {
     const [
       seedPart,
@@ -227,6 +267,8 @@ function parseExtendedSeed(seedStr) {
       smoothAmt: Math.max(0, Math.min(100, parseInt(smoothAmt) || 45)),
       contrast: Math.max(50, Math.min(170, parseInt(contrast) || 110)),
       colorConsensusCount: Math.max(1, Math.min(10, parseInt(consensus) || 1)),
+      spatialWeight: 0, // Default values for legacy seeds
+      colorTolerance: 0,
     };
 
     return { seed, settings };
@@ -248,6 +290,8 @@ function applySettings(settings) {
   PROTECT_NEAR_BLACK = settings.PROTECT_NEAR_BLACK;
   contrastFactor = settings.contrast / 100;
   colorConsensusCount = settings.colorConsensusCount;
+  spatialWeight = settings.spatialWeight / 100;
+  colorTolerance = settings.colorTolerance / 100;
 
   // Update UI controls
   $("#k").value = kFamilies;
@@ -267,6 +311,22 @@ function applySettings(settings) {
 
   $("#colorConsensus").value = colorConsensusCount;
   $("#colorConsensusVal").textContent = colorConsensusCount;
+
+  $("#spatialWeight").value = settings.spatialWeight;
+  $("#spatialWeightVal").textContent = settings.spatialWeight + "%";
+
+  $("#colorTolerance").value = settings.colorTolerance;
+  $("#colorToleranceVal").textContent = settings.colorTolerance + "%";
+
+  // Auto-expand experimental section if any experimental settings are non-default
+  const hasExperimentalSettings =
+    settings.colorConsensusCount > 1 ||
+    settings.spatialWeight > 0 ||
+    settings.colorTolerance > 0;
+
+  if (hasExperimentalSettings && !experimentalExpanded) {
+    $("#experimentalToggle").click(); // This will trigger the toggle and save state
+  }
 
   // Update the extended seed display
   updateSeedDisplay();
@@ -979,6 +1039,40 @@ $("#showRegionOutline").onchange = (e) => {
 // Initialize the state based on checkbox
 showRegionOutline = $("#showRegionOutline").checked;
 
+// Experimental section toggle functionality
+let experimentalExpanded = false;
+$("#experimentalToggle").onclick = () => {
+  experimentalExpanded = !experimentalExpanded;
+  const content = $("#experimentalContent");
+  const arrow = $("#experimentalArrow");
+
+  if (experimentalExpanded) {
+    content.style.display = "block";
+    arrow.textContent = "▼";
+  } else {
+    content.style.display = "none";
+    arrow.textContent = "▶";
+  }
+
+  // Save the state to localStorage
+  try {
+    localStorage.setItem(
+      "bdsp_experimental_expanded",
+      experimentalExpanded.toString()
+    );
+  } catch (e) {}
+};
+
+// Initialize experimental section state from localStorage
+try {
+  const savedState = localStorage.getItem("bdsp_experimental_expanded");
+  if (savedState === "true") {
+    experimentalExpanded = true;
+    $("#experimentalContent").style.display = "block";
+    $("#experimentalArrow").textContent = "▼";
+  }
+} catch (e) {}
+
 /* ===== Initialize slider values ===== */
 function initializeSliderValues() {
   // Sync slider values with JavaScript variables and update display spans
@@ -1053,6 +1147,8 @@ $("#restoreDefaults").onclick = () => {
     smoothAmt: 45,
     contrast: 110,
     colorConsensusCount: 1,
+    spatialWeight: 0,
+    colorTolerance: 0,
   };
 
   applySettings(defaultSettings);
