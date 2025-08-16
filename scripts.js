@@ -2446,6 +2446,34 @@ function applyShiny() {
 
     const base = R.linked || !R.lab ? famShinyLab[fam] : R.lab;
 
+    // For loaded shiny sprites, if the region color hasn't been modified from original
+    // AND all transformation settings are at default values, use exact original pixel
+    if (loadedShinySprite && loadedShinyRegions && loadedShinyRegions[rid]) {
+      const originalRegion = loadedShinyRegions[rid];
+      const contrastAtDefault = Math.abs(contrastFactor - 1.1) < 0.01; // Default contrast is 110%
+      const regionDarkAtDefault = !regionDark[rid] || regionDark[rid] === 0;
+      const smoothingAtDefault =
+        +$("#smoothPx").value === 1 && +$("#smoothAmt").value === 45;
+
+      if (
+        originalRegion.lab &&
+        R.lab &&
+        Math.abs(R.lab[0] - originalRegion.lab[0]) < 0.01 &&
+        Math.abs(R.lab[1] - originalRegion.lab[1]) < 0.01 &&
+        Math.abs(R.lab[2] - originalRegion.lab[2]) < 0.01 &&
+        contrastAtDefault &&
+        regionDarkAtDefault &&
+        smoothingAtDefault
+      ) {
+        // Color and settings unchanged from original, use exact original pixel
+        D[i] = r;
+        D[i + 1] = g;
+        D[i + 2] = b;
+        D[i + 3] = a;
+        continue;
+      }
+    }
+
     // Lightness remap (preserve relative shading) + per-region ΔL + global contrast
     let Lp =
       base[0] + (pixLabs[p][0] - famCenters[fam][0]) + (regionDark[rid] || 0);
