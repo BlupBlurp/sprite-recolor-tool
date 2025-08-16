@@ -64,10 +64,17 @@ function setSeed(seed) {
     // Generate a random seed if none provided
     currentSeed = Math.floor(Math.random() * 2147483647);
   } else {
-    // Parse the provided seed
-    currentSeed = parseInt(seed);
-    if (isNaN(currentSeed)) {
-      currentSeed = hashString(seed.toString());
+    // Handle both simple seeds and extended seed format
+    if (typeof seed === "string" && seed.includes("-")) {
+      // This is an extended seed, extract just the seed part
+      const parsed = parseExtendedSeed(seed);
+      currentSeed = parsed.seed;
+    } else {
+      // Parse the provided seed
+      currentSeed = parseInt(seed);
+      if (isNaN(currentSeed)) {
+        currentSeed = hashString(seed.toString());
+      }
     }
   }
 
@@ -75,9 +82,10 @@ function setSeed(seed) {
   currentSeed = Math.abs(currentSeed) || 1;
   rngState = currentSeed;
 
-  // Save seed to localStorage for persistence
+  // Save extended seed to localStorage for persistence
   try {
-    localStorage.setItem("bdsp_rng_seed", currentSeed.toString());
+    const extendedSeed = createExtendedSeed();
+    localStorage.setItem("bdsp_extended_seed", extendedSeed);
   } catch (e) {}
 
   // Update the UI to show current seed
@@ -89,6 +97,25 @@ function setSeed(seed) {
 // Initialize seed from localStorage or generate new one
 function initializeSeed() {
   try {
+    // First try to load extended seed
+    const savedExtendedSeed = localStorage.getItem("bdsp_extended_seed");
+    if (savedExtendedSeed) {
+      const parsed = parseExtendedSeed(savedExtendedSeed);
+      if (parsed.seed > 0) {
+        currentSeed = parsed.seed;
+        rngState = currentSeed;
+
+        // Apply saved settings if they exist
+        if (parsed.settings) {
+          applySettings(parsed.settings);
+        }
+
+        updateSeedDisplay();
+        return;
+      }
+    }
+
+    // Fallback to old seed format
     const savedSeed = localStorage.getItem("bdsp_rng_seed");
     if (savedSeed) {
       currentSeed = parseInt(savedSeed);
@@ -103,9 +130,6 @@ function initializeSeed() {
   // No valid saved seed, generate a new one
   setSeed(null);
 }
-
-// Initialize the seed when the page loads
-initializeSeed();
 
 function hashString(str) {
   let hash = 0;
@@ -129,29 +153,123 @@ function seededRandom() {
 function updateSeedDisplay() {
   const seedElement = $("#currentSeed");
   if (seedElement) {
-    seedElement.textContent = currentSeed || "-";
+    const extendedSeed = createExtendedSeed();
+    seedElement.textContent = extendedSeed || "-";
 
     // Add click handler to copy seed to clipboard
     seedElement.onclick = () => {
-      if (currentSeed) {
+      if (extendedSeed) {
         navigator.clipboard
-          .writeText(currentSeed.toString())
+          .writeText(extendedSeed)
           .then(() => {
-            toast("Seed copied to clipboard!");
+            toast("Extended seed copied to clipboard!");
           })
           .catch(() => {
             // Fallback for older browsers
             const textArea = document.createElement("textarea");
-            textArea.value = currentSeed.toString();
+            textArea.value = extendedSeed;
             document.body.appendChild(textArea);
             textArea.select();
             document.execCommand("copy");
             document.body.removeChild(textArea);
-            toast("Seed copied to clipboard!");
+            toast("Extended seed copied to clipboard!");
           });
       }
     };
   }
+}
+
+// Create extended seed containing all current settings
+function createExtendedSeed() {
+  if (!currentSeed) return null;
+
+  const smoothPx = +$("#smoothPx").value;
+  const smoothAmt = +$("#smoothAmt").value;
+  const contrast = Math.round(contrastFactor * 100);
+
+  return `${currentSeed}-${kFamilies}-${PROTECT_NEAR_BLACK}-${smoothPx}-${smoothAmt}-${contrast}-${colorConsensusCount}`;
+}
+
+// Parse extended seed and apply all settings
+function parseExtendedSeed(seedStr) {
+  if (!seedStr || typeof seedStr !== "string") return null;
+
+  const parts = seedStr.split("-");
+
+  // If it's just a number (old format), use it as seed with current settings
+  if (parts.length === 1) {
+    return {
+      seed: parseInt(parts[0]) || hashString(seedStr),
+      settings: null, // No settings to apply
+    };
+  }
+
+  // Extended format: seed-kFamilies-PROTECT_NEAR_BLACK-smoothPx-smoothAmt-contrast-colorConsensusCount
+  if (parts.length === 7) {
+    const [
+      seedPart,
+      kFam,
+      protectOutline,
+      smoothPx,
+      smoothAmt,
+      contrast,
+      consensus,
+    ] = parts;
+
+    const seed = parseInt(seedPart) || hashString(seedPart);
+    const settings = {
+      kFamilies: Math.max(5, Math.min(48, parseInt(kFam) || 32)),
+      PROTECT_NEAR_BLACK: Math.max(
+        0,
+        Math.min(50, parseInt(protectOutline) || 8)
+      ),
+      smoothPx: Math.max(0, Math.min(5, parseInt(smoothPx) || 1)),
+      smoothAmt: Math.max(0, Math.min(100, parseInt(smoothAmt) || 45)),
+      contrast: Math.max(50, Math.min(170, parseInt(contrast) || 110)),
+      colorConsensusCount: Math.max(1, Math.min(10, parseInt(consensus) || 1)),
+    };
+
+    return { seed, settings };
+  }
+
+  // Invalid format, treat as string seed
+  return {
+    seed: hashString(seedStr),
+    settings: null,
+  };
+}
+
+// Apply settings to UI and variables
+function applySettings(settings) {
+  if (!settings) return;
+
+  // Update variables
+  kFamilies = settings.kFamilies;
+  PROTECT_NEAR_BLACK = settings.PROTECT_NEAR_BLACK;
+  contrastFactor = settings.contrast / 100;
+  colorConsensusCount = settings.colorConsensusCount;
+
+  // Update UI controls
+  $("#k").value = kFamilies;
+  $("#kVal").textContent = kFamilies;
+
+  $("#ink").value = PROTECT_NEAR_BLACK;
+  $("#inkVal").textContent = PROTECT_NEAR_BLACK;
+
+  $("#smoothPx").value = settings.smoothPx;
+  $("#smoothPxVal").textContent = settings.smoothPx;
+
+  $("#smoothAmt").value = settings.smoothAmt;
+  $("#smoothAmtVal").textContent = settings.smoothAmt + "%";
+
+  $("#contrast").value = settings.contrast;
+  $("#contrastVal").textContent = settings.contrast + "%";
+
+  $("#colorConsensus").value = colorConsensusCount;
+  $("#colorConsensusVal").textContent = colorConsensusCount;
+
+  // Update the extended seed display
+  updateSeedDisplay();
 }
 
 /* ===== folder ingest ===== */
@@ -726,6 +844,7 @@ let showRegionOutline = false; // Show selected region outline
 $("#k").oninput = (e) => {
   kFamilies = +e.target.value;
   $("#kVal").textContent = kFamilies;
+  updateSeedDisplay();
 };
 (() => {
   const el = $("#spw");
@@ -734,12 +853,14 @@ $("#k").oninput = (e) => {
       spatialW = +e.target.value / 100;
       const v = $("#spwVal");
       if (v) v.textContent = spatialW.toFixed(2);
+      updateSeedDisplay();
     };
   }
 })();
 $("#ink").oninput = (e) => {
   PROTECT_NEAR_BLACK = +e.target.value;
   $("#inkVal").textContent = PROTECT_NEAR_BLACK;
+  updateSeedDisplay();
   if (sprite) {
     drawSprite();
     applyShiny();
@@ -747,20 +868,24 @@ $("#ink").oninput = (e) => {
 };
 $("#smoothPx").oninput = (e) => {
   $("#smoothPxVal").textContent = e.target.value;
+  updateSeedDisplay();
   sprite && applyShiny();
 };
 $("#smoothAmt").oninput = (e) => {
   $("#smoothAmtVal").textContent = e.target.value + "%";
+  updateSeedDisplay();
   sprite && applyShiny();
 };
 $("#contrast").oninput = (e) => {
   contrastFactor = +e.target.value / 100;
   $("#contrastVal").textContent = Math.round(contrastFactor * 100) + "%";
+  updateSeedDisplay();
   sprite && applyShiny();
 };
 $("#colorConsensus").oninput = (e) => {
   colorConsensusCount = +e.target.value;
   $("#colorConsensusVal").textContent = colorConsensusCount;
+  updateSeedDisplay();
   // Trigger recomputation if we have a sprite loaded
   if (sprite && pixLabs) {
     computeFamiliesAndRegions();
@@ -810,6 +935,9 @@ function initializeSliderValues() {
 // Initialize slider values on page load
 initializeSliderValues();
 
+// Initialize the seed when the page loads (after variables are declared)
+initializeSeed();
+
 $("#recluster").onclick = () => {
   if (!sprite) return;
 
@@ -818,8 +946,17 @@ $("#recluster").onclick = () => {
   const inputSeed = seedInput.value.trim();
 
   if (inputSeed) {
-    // Use the provided seed and clear the field
-    setSeed(inputSeed);
+    // Parse extended seed format
+    const parsed = parseExtendedSeed(inputSeed);
+
+    // Set the seed
+    setSeed(parsed.seed);
+
+    // Apply settings if they exist
+    if (parsed.settings) {
+      applySettings(parsed.settings);
+    }
+
     seedInput.value = "";
   } else {
     // Generate new random seed
@@ -828,6 +965,28 @@ $("#recluster").onclick = () => {
 
   computeFamiliesAndRegions();
   applyShiny();
+};
+
+// Restore all settings to default values
+$("#restoreDefaults").onclick = () => {
+  const defaultSettings = {
+    kFamilies: 32,
+    PROTECT_NEAR_BLACK: 8,
+    smoothPx: 1,
+    smoothAmt: 45,
+    contrast: 110,
+    colorConsensusCount: 1,
+  };
+
+  applySettings(defaultSettings);
+
+  // If there's a sprite loaded, recluster with new settings
+  if (sprite) {
+    computeFamiliesAndRegions();
+    applyShiny();
+  }
+
+  toast("Settings restored to defaults");
 };
 
 // Allow pressing Enter in the seed input to trigger recluster
