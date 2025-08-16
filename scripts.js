@@ -797,6 +797,63 @@ function analyzeColorHarmony(colorLab, candidateLab) {
 
   return complementaryBonus * analogousBonus * chromaBonus;
 }
+
+// Spatial awareness functions for position-based color matching
+function calculateRegionCenter(regionId) {
+  if (!regionIds || regionId < 0 || regionId >= regions.length) return null;
+
+  let sumX = 0,
+    sumY = 0,
+    count = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const p = y * width + x;
+      if (regionIds[p] === regionId) {
+        sumX += x;
+        sumY += y;
+        count++;
+      }
+    }
+  }
+
+  if (count === 0) return null;
+  return {
+    x: sumX / count / width, // Normalized 0-1
+    y: sumY / count / height, // Normalized 0-1
+  };
+}
+
+function calculateSpatialDistance(x1, y1, x2, y2) {
+  // Euclidean distance in normalized space (0-1)
+  const dx = x1 - x2;
+  const dy = y1 - y2;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Fallback strategies for distant colors
+function applyShinyHeuristics(centerLab) {
+  const [L, a, b] = centerLab;
+
+  // Common shiny transformations based on heuristics
+  const hue = labToHue(centerLab);
+  const chroma = labToChroma(centerLab);
+
+  // Strategy 1: Shift hue by common amounts (gold, pink, blue shifts)
+  const hueShifts = [60, 120, 180, 240, 300]; // Common shiny hue shifts
+  const bestShift = hueShifts[Math.floor(seededRandom() * hueShifts.length)];
+  const newHue = (hue + bestShift) % 360;
+
+  // Convert back to LAB
+  const newA = chroma * Math.cos((newHue * Math.PI) / 180);
+  const newB = chroma * Math.sin((newHue * Math.PI) / 180);
+
+  // Strategy 2: Adjust lightness (darker or lighter variants)
+  const lightnessShift = (seededRandom() - 0.5) * 40; // ±20 lightness units
+  const newL = Math.max(0, Math.min(100, L + lightnessShift));
+
+  return [newL, newA, newB];
+}
+
 const hex = (r, g, b) =>
   "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
 const unhex = (h) => [
@@ -837,6 +894,8 @@ let loadedShinyRegions = null; // Store original region colors for revert
 let currentFolderSelection = null; // Track current folder selection
 let contrastFactor = 1.1; // 110%
 let colorConsensusCount = 1; // Number of candidates to consider for consensus
+let spatialWeight = 0; // 0-1, weight for spatial similarity in color matching
+let colorTolerance = 0; // 0-1, tolerance for adaptive color thresholds
 let zoomMode = false; // Zoom feature state
 let showRegionOutline = false; // Show selected region outline
 
@@ -885,6 +944,24 @@ $("#contrast").oninput = (e) => {
 $("#colorConsensus").oninput = (e) => {
   colorConsensusCount = +e.target.value;
   $("#colorConsensusVal").textContent = colorConsensusCount;
+  updateSeedDisplay();
+  // Trigger recomputation if we have a sprite loaded
+  if (sprite && pixLabs) {
+    computeFamiliesAndRegions();
+  }
+};
+$("#spatialWeight").oninput = (e) => {
+  spatialWeight = +e.target.value / 100;
+  $("#spatialWeightVal").textContent = Math.round(spatialWeight * 100) + "%";
+  updateSeedDisplay();
+  // Trigger recomputation if we have a sprite loaded
+  if (sprite && pixLabs) {
+    computeFamiliesAndRegions();
+  }
+};
+$("#colorTolerance").oninput = (e) => {
+  colorTolerance = +e.target.value / 100;
+  $("#colorToleranceVal").textContent = Math.round(colorTolerance * 100) + "%";
   updateSeedDisplay();
   // Trigger recomputation if we have a sprite loaded
   if (sprite && pixLabs) {
@@ -1346,10 +1423,10 @@ function buildMap() {
     const P = texPairs[key];
     if (!(P.N && P.N.length && P.S && P.S.length)) continue;
     const buckets = new Map();
-    const push = (code, nLab, sLab) => {
+    const push = (code, nLab, sLab, textureX, textureY) => {
       let t = buckets.get(code);
       if (!t) {
-        t = { nL: 0, na: 0, nb: 0, L: 0, a: 0, b: 0, c: 0 };
+        t = { nL: 0, na: 0, nb: 0, L: 0, a: 0, b: 0, c: 0, sumX: 0, sumY: 0 }; // Add spatial tracking
         buckets.set(code, t);
       }
       t.nL += nLab[0];
@@ -1358,6 +1435,8 @@ function buildMap() {
       t.L += sLab[0];
       t.a += sLab[1];
       t.b += sLab[2];
+      t.sumX += textureX;
+      t.sumY += textureY;
       t.c++;
     };
     const pairs = Math.min(P.N.length, P.S.length);
@@ -1365,14 +1444,25 @@ function buildMap() {
       const A = P.N[k].img.data,
         B = P.S[k].img.data,
         len = Math.min(A.length, B.length);
+      const textureWidth = P.N[k].img.width;
+      const textureHeight = P.N[k].img.height;
+
       for (let i = 0; i < len; i += 4) {
         if (A[i + 3] < 16 || B[i + 3] < 16) continue;
         const code =
           ((A[i] >> 4) << 8) | ((A[i + 1] >> 4) << 4) | (A[i + 2] >> 4);
+
+        // Calculate normalized position for spatial awareness
+        const pixelIndex = i / 4;
+        const textureX = (pixelIndex % textureWidth) / textureWidth; // Normalized 0-1
+        const textureY = Math.floor(pixelIndex / textureWidth) / textureHeight; // Normalized 0-1
+
         push(
           code,
           rgbToLab(A[i], A[i + 1], A[i + 2]),
-          rgbToLab(B[i], B[i + 1], B[i + 2])
+          rgbToLab(B[i], B[i + 1], B[i + 2]),
+          textureX,
+          textureY
         );
       }
     }
@@ -1382,6 +1472,8 @@ function buildMap() {
         sLab: [t.L / t.c, t.a / t.c, t.b / t.c],
         weight: t.c, // Frequency weight for consensus
         textureKey: key, // Track which texture this came from
+        textureX: t.sumX / t.c, // Average position X
+        textureY: t.sumY / t.c, // Average position Y
       });
     shinyTextureKeys.push(key);
   }
@@ -1469,11 +1561,15 @@ function drawSprite() {
 }
 
 /* ===== clustering / regions ===== */
-function suggest(centerLab) {
+function suggest(centerLab, regionCenter = null) {
   if (!mapIndex.length) return centerLab.slice();
 
-  // If consensus count is 1, use original algorithm for efficiency
-  if (colorConsensusCount === 1) {
+  // If no new features are enabled, use original algorithm for efficiency
+  if (
+    colorConsensusCount === 1 &&
+    spatialWeight === 0 &&
+    colorTolerance === 0
+  ) {
     let bd = 1e9,
       best = mapIndex[0];
     for (let i = 0; i < mapIndex.length; i++) {
@@ -1487,41 +1583,70 @@ function suggest(centerLab) {
     return best.sLab.slice();
   }
 
-  // Enhanced color consensus algorithm
+  // Enhanced algorithm with spatial awareness and adaptive thresholds
   const candidates = [];
 
-  // Find all potential matches within a reasonable distance
-  // Adjust max distance based on consensus count - more candidates need broader search
-  const MAX_DISTANCE = 20 + colorConsensusCount * 5; // 25-70 range
+  // Base max distance, increased by color tolerance
+  let MAX_DISTANCE = 20 + colorConsensusCount * 5; // 25-70 range
+  if (colorTolerance > 0) {
+    MAX_DISTANCE += colorTolerance * 50; // Add up to 50 more units for tolerance
+  }
 
   for (let i = 0; i < mapIndex.length; i++) {
     const m = mapIndex[i];
-    const distance = dE(centerLab, m.nLab);
+    const colorDistance = dE(centerLab, m.nLab);
 
-    if (distance <= MAX_DISTANCE) {
+    // Calculate combined distance with spatial weighting
+    let combinedDistance = colorDistance;
+
+    if (
+      spatialWeight > 0 &&
+      regionCenter &&
+      m.textureX !== undefined &&
+      m.textureY !== undefined
+    ) {
+      const spatialDistance = calculateSpatialDistance(
+        regionCenter.x,
+        regionCenter.y,
+        m.textureX,
+        m.textureY
+      );
+      // Spatial distance is 0-1.4 (diagonal), scale it to be comparable to color distance
+      const scaledSpatialDistance = spatialDistance * 100; // Scale to color distance range
+      combinedDistance =
+        colorDistance * (1 - spatialWeight) +
+        scaledSpatialDistance * spatialWeight;
+    }
+
+    if (combinedDistance <= MAX_DISTANCE) {
       candidates.push({
         mapping: m,
-        distance: distance,
-        score: calculateConsensusScore(m, distance, centerLab),
+        distance: combinedDistance,
+        colorDistance: colorDistance,
+        score: calculateConsensusScore(m, combinedDistance, centerLab),
       });
     }
   }
 
   if (candidates.length === 0) {
-    // Fallback to original behavior if no good candidates
-    // But use a more generous distance threshold
-    let bd = 1e9,
-      best = mapIndex[0];
-    for (let i = 0; i < mapIndex.length; i++) {
-      const m = mapIndex[i];
-      const d = dE(centerLab, m.nLab);
-      if (d < bd) {
-        bd = d;
-        best = m;
+    // Enhanced fallback strategies based on color tolerance
+    if (colorTolerance > 0) {
+      // Try adaptive fallback strategies
+      return applyShinyHeuristics(centerLab);
+    } else {
+      // Original fallback behavior - find closest match regardless of distance
+      let bd = 1e9,
+        best = mapIndex[0];
+      for (let i = 0; i < mapIndex.length; i++) {
+        const m = mapIndex[i];
+        const d = dE(centerLab, m.nLab);
+        if (d < bd) {
+          bd = d;
+          best = m;
+        }
       }
+      return best.sLab.slice();
     }
-    // console.log(`Fallback used for color [${centerLab.map(x => x.toFixed(1)).join(', ')}], distance: ${bd.toFixed(2)}`);
-    return best.sLab.slice();
   }
 
   // Debug logging (uncomment for development)
@@ -1730,8 +1855,54 @@ function computeFamiliesAndRegions() {
       regionDark[rid] = 0;
       rid++;
     }
+
+  // If spatial awareness is enabled, recompute family colors with region centers
+  if (spatialWeight > 0) {
+    recomputeFamilyColorsWithSpatialAwareness();
+  }
+
   renderPanel();
   st(`Clustering done — ${regions.length} regions`);
+}
+
+function recomputeFamilyColorsWithSpatialAwareness() {
+  // Calculate the representative region for each family (largest region)
+  const familyRepresentativeRegions = new Array(famCenters.length).fill(-1);
+
+  for (let fam = 0; fam < famCenters.length; fam++) {
+    const familyRegions = famToRegions[fam];
+    let largestRegion = -1;
+    let largestSize = 0;
+
+    for (const rid of familyRegions) {
+      // Count pixels in this region
+      let size = 0;
+      for (let p = 0; p < regionIds.length; p++) {
+        if (regionIds[p] === rid) size++;
+      }
+
+      if (size > largestSize) {
+        largestSize = size;
+        largestRegion = rid;
+      }
+    }
+
+    if (largestRegion >= 0) {
+      familyRepresentativeRegions[fam] = largestRegion;
+    }
+  }
+
+  // Recompute family colors using spatial information from representative regions
+  for (let fam = 0; fam < famCenters.length; fam++) {
+    const repRegion = familyRepresentativeRegions[fam];
+    if (repRegion >= 0) {
+      const regionCenter = calculateRegionCenter(repRegion);
+      if (regionCenter) {
+        famShinyLab[fam] = suggest(famCenters[fam], regionCenter);
+        famAutoLab[fam] = famShinyLab[fam].slice();
+      }
+    }
+  }
 }
 
 const labToHex = (Lab) => {
