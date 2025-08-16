@@ -179,6 +179,16 @@
                 title="Select the root folder containing Pokémon texture files to work with."
               />Pick Root Folder</label
             >
+            <label class="btn" id="loadShinyLabel"
+              ><input
+                id="loadShiny"
+                type="file"
+                accept="image/png"
+                title="Load an existing shiny sprite for editing."
+                style="display: none"
+                disabled
+              />Load Shiny</label
+            >
             <button
               id="saveBtn"
               class="btn gray"
@@ -279,7 +289,7 @@
             </div>
           </div>
         </div>
-        
+
         <div id="status">Idle</div>
       </div>
       <div class="card">

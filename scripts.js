@@ -191,6 +191,19 @@ function indexFolders() {
   currentTextures = [];
   currentSpriteFile = null;
   st(`Found ${folders.size} folders`);
+
+  // Enable Load Shiny button when folders are available
+  const loadShinyInput = $("#loadShiny");
+  const loadShinyLabel = $("#loadShinyLabel");
+  if (folders.size > 0) {
+    loadShinyInput.disabled = false;
+    loadShinyLabel.style.opacity = "1";
+    loadShinyLabel.title = "Load an existing shiny sprite for editing.";
+  } else {
+    loadShinyInput.disabled = true;
+    loadShinyLabel.style.opacity = "0.5";
+    loadShinyLabel.title = "Please select a root folder first.";
+  }
 }
 
 function renderFolderList() {
@@ -698,6 +711,12 @@ let regions = [],
 let regionDark = {},
   pickMode = null,
   pickedColorForApply = null; // New state for pick & apply mode
+
+// Track loaded shiny sprite state
+let loadedShinySprite = null;
+let originalSpriteData = null; // Store original sprite image data for "keep original"
+let loadedShinyRegions = null; // Store original region colors for revert
+let currentFolderSelection = null; // Track current folder selection
 let contrastFactor = 1.1; // 110%
 let colorConsensusCount = 1; // Number of candidates to consider for consensus
 let zoomMode = false; // Zoom feature state
@@ -835,6 +854,187 @@ $("#saveBtn").onclick = () => {
   a.href = $("#c1").toDataURL("image/png");
   a.click();
 };
+
+/* ===== Load shiny sprite functionality ===== */
+$("#loadShiny").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    st("Loading shiny sprite…");
+
+    // Store current folder selection
+    const folderSel = $("#folderSel");
+    currentFolderSelection = folderSel.selectedIndex;
+
+    // Validate filename pattern matches current Pokémon
+    const currentFolder = folderSel.value;
+    if (!currentFolder) {
+      toast("Please select a Pokémon folder first");
+      st("Error: No Pokémon selected");
+      e.target.value = ""; // Clear file input
+      return;
+    }
+
+    // Extract Pokémon ID from current folder (pm####_##_##)
+    const folderMatch = currentFolder.match(/^pm(\d{4})_(\d{2})_(\d{2})$/);
+    if (!folderMatch) {
+      toast("Invalid folder format");
+      st("Error: Invalid folder format");
+      e.target.value = "";
+      return;
+    }
+
+    // Check if uploaded file matches expected shiny naming pattern
+    // Convert pm####_##_##0 to pm####_##_##1 (replace last digit with 1)
+    const thirdPart = folderMatch[3]; // e.g., "00"
+    const shinyThirdPart = thirdPart.slice(0, -1) + "1"; // e.g., "00" -> "01"
+    const expectedShinyName = `pm${folderMatch[1]}_${folderMatch[2]}_${shinyThirdPart}.png`;
+    if (file.name !== expectedShinyName) {
+      toast(
+        `File must be named "${expectedShinyName}" to match selected Pokémon`
+      );
+      st(`Error: Expected ${expectedShinyName}, got ${file.name}`);
+      e.target.value = "";
+      return;
+    }
+
+    // Load the shiny sprite file as Image
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+
+    // Store the loaded shiny sprite and get the current normal sprite for "keep original"
+    loadedShinySprite = img;
+
+    // Find and load the normal sprite data for "keep original" functionality
+    const currentFolderData = folders.get(currentFolder);
+    if (currentFolderData && currentFolderData.sprites.length > 0) {
+      const normalSpriteFile = currentFolderData.sprites[0]; // The normal sprite file
+      try {
+        const normalCanvas = await fileToCanvas(normalSpriteFile);
+        const normalCtx = normalCanvas.getContext("2d");
+        originalSpriteData = normalCtx.getImageData(
+          0,
+          0,
+          normalCanvas.width,
+          normalCanvas.height
+        );
+      } catch (error) {
+        console.warn(
+          "Could not load normal sprite for 'keep original' functionality:",
+          error
+        );
+        originalSpriteData = null;
+      }
+    } else {
+      originalSpriteData = null;
+    }
+
+    // Set as current sprite
+    sprite = img;
+    currentSpriteFile = file;
+
+    // Use the same logic as drawSprite() to properly initialize the sprite
+    drawSprite();
+
+    // Compute families and regions for the loaded sprite
+    requestAnimationFrame(() => {
+      computeFamiliesAndRegions();
+
+      // For loaded shiny sprites, extract actual colors from each region
+      // and make them independent to prevent cross-region color changes
+      if (loadedShinySprite) {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(loadedShinySprite, 0, 0);
+        const imageData = ctx.getImageData(0, 0, width, height);
+        const data = imageData.data;
+
+        regions.forEach((region, regionIndex) => {
+          if (region && !region.deleted) {
+            // Extract the actual average color for this region from the loaded sprite
+            let totalR = 0,
+              totalG = 0,
+              totalB = 0,
+              count = 0;
+
+            for (let p = 0; p < regionIds.length; p++) {
+              if (regionIds[p] === regionIndex) {
+                const i = p * 4;
+                if (data[i + 3] > 0) {
+                  // Only count non-transparent pixels
+                  totalR += data[i];
+                  totalG += data[i + 1];
+                  totalB += data[i + 2];
+                  count++;
+                }
+              }
+            }
+
+            if (count > 0) {
+              const avgR = Math.round(totalR / count);
+              const avgG = Math.round(totalG / count);
+              const avgB = Math.round(totalB / count);
+              region.lab = rgbToLab(avgR, avgG, avgB);
+              region.linked = false; // Make regions independent
+            } else {
+              region.linked = false; // Still make it independent even if no pixels found
+            }
+          }
+        });
+      }
+
+      // Store the original shiny region colors for revert functionality
+      loadedShinyRegions = regions.map((r) =>
+        r
+          ? {
+              lab: r.lab ? r.lab.slice() : null,
+              linked: r.linked,
+              keep: r.keep,
+              fam: r.fam,
+            }
+          : null
+      );
+
+      // Since this is already a completed shiny, just copy it to the shiny canvas
+      const c1 = $("#c1");
+      const x1 = c1.getContext("2d");
+      x1.imageSmoothingEnabled = false;
+      x1.drawImage(sprite, 0, 0);
+    });
+
+    // DON'T clear texture pairs - keep them for reference
+    // texPairs = {};
+    // mapIndex = [];
+    // shinyTextureKeys = [];
+
+    // RESTORE the folder selection instead of resetting it
+    setTimeout(() => {
+      if (currentFolderSelection !== null) {
+        folderSel.selectedIndex = currentFolderSelection;
+      }
+    }, 100);
+
+    // Update UI elements
+    fillTexDropdown();
+    if (typeof fillSourceDropdown === "function") fillSourceDropdown();
+
+    toast(
+      "Shiny sprite loaded successfully! You can now edit it by selecting regions."
+    );
+  } catch (error) {
+    console.error("Error loading shiny sprite:", error);
+    st("Error loading shiny sprite");
+    toast("Failed to load shiny sprite");
+    e.target.value = ""; // Clear file input on error
+  }
+});
 
 /* ===== zoom functionality ===== */
 function toggleZoomMode() {
@@ -1482,11 +1682,32 @@ $("#sheetColor").oninput = (e) => {
 $("#sheetRevert").onclick = () => {
   const R = regions[selectedRegion];
   if (!R || R.deleted || R.keep) return;
-  if (R.linked) famShinyLab[R.fam] = famAutoLab[R.fam].slice();
-  else {
-    R.lab = null;
-    R.linked = true;
+
+  // For loaded shiny sprites, revert to original loaded shiny colors
+  if (
+    loadedShinySprite &&
+    loadedShinyRegions &&
+    loadedShinyRegions[selectedRegion]
+  ) {
+    const originalRegion = loadedShinyRegions[selectedRegion];
+    if (originalRegion.lab) {
+      R.lab = originalRegion.lab.slice(); // Copy the original LAB values
+      R.linked = false; // Make sure it's not linked to avoid affecting other regions
+    } else {
+      R.lab = null;
+      R.linked = true;
+    }
+  } else {
+    // Normal revert behavior for texture-based sprites
+    if (R.linked) {
+      // For normal sprites, we can modify the family color since it's expected behavior
+      famShinyLab[R.fam] = famAutoLab[R.fam].slice();
+    } else {
+      R.lab = null;
+      R.linked = true;
+    }
   }
+
   const c = labToHex(R.linked || !R.lab ? famShinyLab[R.fam] : R.lab);
   $("#sheetColor").value = c;
   $("#pickedSwatch").style.background = c;
@@ -2206,10 +2427,20 @@ function applyShiny() {
       continue;
     }
     if (R.keep) {
-      D[i] = r;
-      D[i + 1] = g;
-      D[i + 2] = b;
-      D[i + 3] = a;
+      // For loaded shiny sprites, use original normal sprite colors when "keep original" is enabled
+      if (loadedShinySprite && originalSpriteData) {
+        const originalIndex = p * 4;
+        D[i] = originalSpriteData.data[originalIndex];
+        D[i + 1] = originalSpriteData.data[originalIndex + 1];
+        D[i + 2] = originalSpriteData.data[originalIndex + 2];
+        D[i + 3] = originalSpriteData.data[originalIndex + 3];
+      } else {
+        // Normal behavior for texture-based sprites
+        D[i] = r;
+        D[i + 1] = g;
+        D[i + 2] = b;
+        D[i + 3] = a;
+      }
       continue;
     }
 

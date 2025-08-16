@@ -46,6 +46,11 @@ h1 {
 .btn.gray {
   background: #364159;
 }
+.btn:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 small {
   color: #9fb3d9;
 }
