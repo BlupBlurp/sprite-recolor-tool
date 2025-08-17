@@ -585,8 +585,13 @@ async function autoLoadSelected() {
     toast("No sprite found in icon/ folder");
     return;
   }
+
+  // Show loading indicators
+  showAllLoadingIndicators("Loading Pokémon...");
+
   currentSpriteFile = pack.sprites[0];
   if (currentTextures.length === 0) {
+    hideAllLoadingIndicators();
     toast("Select at least one texture");
     return;
   }
@@ -611,8 +616,9 @@ async function autoLoadSelected() {
     drawSprite();
     requestAnimationFrame(() => {
       // Use existing seed for consistent results, or it can be changed via UI
-      computeFamiliesAndRegions();
+      computeFamiliesAndRegions(false); // Don't show loading indicator during initial load
       applyShiny();
+      hideAllLoadingIndicators(); // Hide loading indicators when done
     });
   };
   sprite.src = sprC.toDataURL();
@@ -943,6 +949,33 @@ const unhex = (h) => [
   parseInt(h.slice(3, 5), 16),
   parseInt(h.slice(5, 7), 16),
 ];
+
+/* ===== loading indicators ===== */
+function showLoadingIndicator(type, message = "Loading...") {
+  const indicator = document.getElementById(`loading${type}`);
+  if (indicator) {
+    const textSpan = indicator.querySelector("span");
+    if (textSpan) textSpan.textContent = message;
+    indicator.classList.add("show");
+  }
+}
+
+function hideLoadingIndicator(type) {
+  const indicator = document.getElementById(`loading${type}`);
+  if (indicator) {
+    indicator.classList.remove("show");
+  }
+}
+
+function showAllLoadingIndicators(message = "Loading...") {
+  showLoadingIndicator("Original", message);
+  showLoadingIndicator("Shiny", message);
+}
+
+function hideAllLoadingIndicators() {
+  hideLoadingIndicator("Original");
+  hideLoadingIndicator("Shiny");
+}
 
 /* ===== recolor state ===== */
 let texPairs = {},
@@ -1496,6 +1529,7 @@ $("#loadShiny").addEventListener("change", async (e) => {
 
   try {
     st("Loading shiny sprite…");
+    showAllLoadingIndicators("Loading shiny sprite...");
 
     // Store current folder selection
     const folderSel = $("#folderSel");
@@ -1577,7 +1611,7 @@ $("#loadShiny").addEventListener("change", async (e) => {
 
     // Compute families and regions for the loaded sprite
     requestAnimationFrame(() => {
-      computeFamiliesAndRegions();
+      computeFamiliesAndRegions(false); // Don't show loading indicator during shiny load
 
       // For loaded shiny sprites, extract actual colors from each region
       // and make them independent to prevent cross-region color changes
@@ -1659,11 +1693,13 @@ $("#loadShiny").addEventListener("change", async (e) => {
     fillTexDropdown();
     if (typeof fillSourceDropdown === "function") fillSourceDropdown();
 
+    hideAllLoadingIndicators(); // Hide loading indicators when done
     toast(
       "Shiny sprite loaded successfully! You can now edit it by selecting regions."
     );
   } catch (error) {
     console.error("Error loading shiny sprite:", error);
+    hideAllLoadingIndicators(); // Hide loading indicators on error
     st("Error loading shiny sprite");
     toast("Failed to load shiny sprite");
     e.target.value = ""; // Clear file input on error
@@ -2114,10 +2150,15 @@ function calculateConsensusScore(mapping, distance, originalLab) {
 
   return score;
 }
-function computeFamiliesAndRegions() {
+function computeFamiliesAndRegions(showLoading = true) {
   if (!pixLabs) {
     st("No sprite");
     return;
+  }
+
+  // Show loading indicator for reclustering, but only if not already loading
+  if (showLoading) {
+    showLoadingIndicator("Shiny", "Reclustering...");
   }
 
   const pts = [],
@@ -2134,6 +2175,7 @@ function computeFamiliesAndRegions() {
     }
   }
   if (!pts.length) {
+    if (showLoading) hideLoadingIndicator("Shiny");
     st("No pixels available");
     return;
   }
@@ -2254,6 +2296,7 @@ function computeFamiliesAndRegions() {
 
   renderPanel();
   st(`Clustering done — ${regions.length} families`);
+  if (showLoading) hideLoadingIndicator("Shiny"); // Hide loading indicator when clustering is complete
 }
 
 function recomputeFamilyColorsWithSpatialAwareness() {
