@@ -232,6 +232,40 @@ input[type="range"]:focus {
   border-color: var(--acc);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
+
+/* Fix sourceSel dropdown styling to override btn.gray */
+#sourceSel {
+  background: var(--bg) !important;
+  color: var(--fg) !important;
+  border: 1px solid var(--bd) !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  font-size: 13px !important;
+  font-weight: normal !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: all 0.2s ease !important;
+}
+
+#sourceSel:hover {
+  background: var(--bg) !important;
+  transform: none !important;
+  border-color: var(--acc) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+#sourceSel:focus {
+  outline: none !important;
+  border-color: var(--acc) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Style dropdown options */
+#sourceSel option {
+  background: var(--bg);
+  color: var(--fg);
+  padding: 8px;
+}
 fieldset {
   border: 1px solid var(--bd);
   border-radius: 8px;
