@@ -391,6 +391,13 @@ function indexFolders() {
     loadShinyInput.disabled = false;
     loadShinyLabel.style.opacity = "1";
     loadShinyLabel.title = "Load an existing shiny sprite for editing.";
+    
+    // Auto-select the first Pokémon in the list
+    const sel = $("#folderSel");
+    if (sel.options && sel.options.length > 1) {
+      sel.selectedIndex = 1; // skip the "(choose)" placeholder
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    }
   } else {
     loadShinyInput.disabled = true;
     loadShinyLabel.style.opacity = "0.5";
