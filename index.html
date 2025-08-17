@@ -33,16 +33,14 @@
               </select>
               <button
                 id="prevPokemon"
-                class="btn gray"
-                style="padding: 6px 8px; font-size: 14px"
+                class="btn gray small"
                 title="Previous Pokémon"
               >
                 ‹
               </button>
               <button
                 id="nextPokemon"
-                class="btn gray"
-                style="padding: 6px 8px; font-size: 14px"
+                class="btn gray small"
                 title="Next Pokémon"
               >
                 ›
@@ -62,58 +60,108 @@
 
         <fieldset>
           <legend>Settings</legend>
-          <div class="kv">
-            <label>Family Count</label
-            ><input
-              id="k"
-              type="range"
-              min="5"
-              max="48"
-              value="32"
-              title="Number of color families to group similar colors together. Higher values create more distinct color regions."
-            /><span id="kVal">32</span>
-            <label class="mut" style="display: none">Spatial weight</label
-            ><input
-              id="spw"
-              style="display: none"
-              type="range"
-              min="0"
-              max="200"
-              value="60"
-            /><span id="spwVal" style="display: none">0.60</span>
-            <label>Protect Outline</label
-            ><input
-              id="ink"
-              type="range"
-              min="0"
-              max="50"
-              value="8"
-              title="Protects dark pixels (like outlines) from being recolored. Higher values protect more pixels."
-            /><span id="inkVal">8</span> <label>Smoothing</label
-            ><input
-              id="smoothPx"
-              type="range"
-              min="0"
-              max="5"
-              value="1"
-              title="Applies smoothing to reduce noise and artifacts. Higher values create smoother transitions."
-            /><span id="smoothPxVal">1</span> <label>Blending</label
-            ><input
-              id="smoothAmt"
-              type="range"
-              min="0"
-              max="100"
-              value="45"
-              title="Controls how much smoothing is applied. Higher values create more blended colors."
-            /><span id="smoothAmtVal">45%</span> <label>Contrast</label
-            ><input
-              id="contrast"
-              type="range"
-              min="50"
-              max="170"
-              value="110"
-              title="Adjusts the contrast of the final shiny sprite. Higher values increase contrast."
-            /><span id="contrastVal">110%</span>
+          <div class="settings-controls">
+            <div class="settings-item">
+              <div class="settings-header">
+                <label>Family Count</label>
+                <span id="kVal">32</span>
+              </div>
+              <input
+                id="k"
+                type="range"
+                min="5"
+                max="48"
+                value="32"
+                title="Number of color families to group similar colors together. Higher values create more distinct color regions."
+              />
+            </div>
+            <div class="settings-item">
+              <div class="settings-header">
+                <label>Protect Outline</label>
+                <span id="inkVal">8</span>
+              </div>
+              <input
+                id="ink"
+                type="range"
+                min="0"
+                max="50"
+                value="8"
+                title="Protects dark pixels (like outlines) from being recolored. Higher values protect more pixels."
+              />
+            </div>
+            <div class="settings-item">
+              <div class="settings-header">
+                <label>Smoothing</label>
+                <span id="smoothPxVal">1</span>
+              </div>
+              <input
+                id="smoothPx"
+                type="range"
+                min="0"
+                max="5"
+                value="1"
+                title="Applies smoothing to reduce noise and artifacts. Higher values create smoother transitions."
+              />
+            </div>
+            <div class="settings-item">
+              <div class="settings-header">
+                <label>Blending</label>
+                <span id="smoothAmtVal">45%</span>
+              </div>
+              <input
+                id="smoothAmt"
+                type="range"
+                min="0"
+                max="100"
+                value="45"
+                title="Controls how much smoothing is applied. Higher values create more blended colors."
+              />
+            </div>
+            <div class="settings-item">
+              <div class="settings-header">
+                <label>Contrast</label>
+                <span id="contrastVal">110%</span>
+              </div>
+              <input
+                id="contrast"
+                type="range"
+                min="50"
+                max="170"
+                value="110"
+                title="Adjusts the contrast of the final shiny sprite. Higher values increase contrast."
+              />
+            </div>
+            <!-- Hidden legacy sliders -->
+            <div style="display: none">
+              <label class="mut">Spatial weight</label>
+              <input id="spw" type="range" min="0" max="200" value="60" />
+              <span id="spwVal">0.60</span>
+            </div>
+          </div>
+
+          <!-- Settings action buttons -->
+          <div
+            style="
+              display: flex;
+              gap: 6px;
+              justify-content: center;
+              margin-top: 8px;
+            "
+          >
+            <button
+              id="recluster"
+              class="btn gray small"
+              title="Recalculates color families and regions with current settings. Use after changing Family Count or other clustering parameters."
+            >
+              Recluster
+            </button>
+            <button
+              id="restoreDefaults"
+              class="btn gray small"
+              title="Restores all settings to their default values."
+            >
+              Restore Defaults
+            </button>
           </div>
         </fieldset>
         <fieldset>
@@ -173,79 +221,81 @@
           </div>
         </fieldset>
         <fieldset>
-          <legend>Debug and Recluster</legend>
-          <div class="row">
-            <label class="toggle"
-              ><input
-                id="showDebug"
-                type="checkbox"
-                title="Shows an overlay highlighting protected pixels that won't be recolored."
-              />
-              Show protected overlay</label
-            >
-            <label class="toggle"
-              ><input
-                id="showRegionOutline"
-                type="checkbox"
-                title="Shows an outline around the currently selected color region."
-              />
-              Show selected region outline</label
-            >
-            <button
-              id="recluster"
-              class="btn gray"
-              title="Recalculates color families and regions with current settings. Use after changing Family Count or other clustering parameters."
-            >
-              Recluster
-            </button>
-            <button
-              id="restoreDefaults"
-              class="btn gray"
-              title="Restores all settings to their default values."
-            >
-              Restore Defaults
-            </button>
-            <label class="toggle"
-              ><input
-                id="multiSeedPreview"
-                type="checkbox"
-                title="Shows 4 different seed variations in a 2x2 grid. Click on any variant to select it and exit preview mode."
-              />
-              Multi-seed Preview</label
-            >
-            <div class="row" style="gap: 4px; margin-top: 8px">
-              <label style="font-size: 12px; color: #888">Seed:</label>
-              <span
-                id="currentSeed"
-                style="
-                  font-family: monospace;
-                  font-size: 12px;
-                  color: #ccc;
-                  cursor: pointer;
-                  user-select: all;
-                "
-                title="Click to copy"
-                >-</span
+          <legend id="debugToggle" style="cursor: pointer; user-select: none">
+            <span id="debugArrow">▶</span> Debug
+          </legend>
+          <div
+            id="debugContent"
+            class="experimental-controls"
+            style="display: none"
+          >
+            <div class="row">
+              <label class="toggle"
+                ><input
+                  id="showDebug"
+                  type="checkbox"
+                  title="Shows an overlay highlighting protected pixels that won't be recolored."
+                />
+                Show protected overlay</label
               >
-            </div>
-            <div class="row" style="gap: 4px; margin-top: 4px">
-              <input
-                id="seedInput"
-                type="text"
-                placeholder="Enter seed"
-                style="flex: 1; font-size: 12px"
-                title="Enter a seed value or extended seed (format: seed-families-outline-smooth-blend-contrast-consensus-spatial-tolerance) to reproduce specific results with settings. Leave empty for random clustering."
-              />
+              <label class="toggle"
+                ><input
+                  id="showRegionOutline"
+                  type="checkbox"
+                  title="Shows an outline around the currently selected color region."
+                />
+                Show selected region outline</label
+              >
+              <label class="toggle"
+                ><input
+                  id="multiSeedPreview"
+                  type="checkbox"
+                  title="Shows 4 different seed variations in a 2x2 grid. Click on any variant to select it and exit preview mode."
+                />
+                Multi-seed Preview</label
+              >
+              <div class="row" style="gap: 4px; margin-top: 8px">
+                <label style="font-size: 12px; color: #888">Seed:</label>
+                <span
+                  id="currentSeed"
+                  style="
+                    font-family: monospace;
+                    font-size: 12px;
+                    color: #ccc;
+                    cursor: pointer;
+                    user-select: all;
+                  "
+                  title="Click to copy"
+                  >-</span
+                >
+              </div>
+              <div class="row" style="gap: 4px; margin-top: 4px">
+                <input
+                  id="seedInput"
+                  type="text"
+                  placeholder="Enter seed"
+                  style="flex: 1; font-size: 12px"
+                  title="Enter a seed value or extended seed (format: seed-families-outline-smooth-blend-contrast-consensus-spatial-tolerance) to reproduce specific results with settings. Leave empty for random clustering."
+                />
+              </div>
             </div>
           </div>
         </fieldset>
       </div>
-
       <!-- RIGHT -->
       <div class="card">
         <!-- Controls moved from header -->
         <div class="controls-section">
-          <h1>Pokémon Shiny Recolor Tool</h1>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 8px;
+            "
+          >
+            <h1 style="margin: 0">Pokémon Shiny Recolor Tool</h1>
+          </div>
           <div class="controls">
             <label class="btn"
               ><input
@@ -430,204 +480,249 @@
       <div class="card">
         <fieldset>
           <legend>Region</legend>
-          <div class="row" style="margin-top: 0">
-            <h3 id="sheetTitle" style="margin-top: 0">Region</h3>
-            <span
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              margin-bottom: 8px;
+            "
+          >
+            <h3 id="sheetTitle" style="margin: 0; font-size: 14px">Region</h3>
+            <label
+              for="sheetColor"
               id="pickedSwatch"
               style="
                 display: inline-block;
-                width: 20px;
-                height: 20px;
-                border: 1px solid #444;
-                border-radius: 4px;
+                width: 24px;
+                height: 24px;
+                border: 2px solid #444;
+                border-radius: 6px;
                 background: #000;
-                margin-left: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                position: relative;
               "
-              title="Shows the current color of the selected region."
-            ></span>
-          </div>
-          <div class="section">
-            <div class="row" style="gap: 8px; flex-wrap: wrap">
-              <span class="pill"
-                ><input
-                  id="sheetColor"
-                  type="color"
-                  value="#000000"
-                  title="Manually set the color for the selected region."
-                /><span>Manual color</span></span
-              >
-              <span class="pill"
-                ><input
-                  id="sheetLink"
-                  type="checkbox"
-                  checked
-                  title="Link this region to its color family. When linked, individual pixel edits are cleared and the family color is used."
-                /><span>Link to family (clears individual pixels)</span></span
-              >
-              <span class="pill"
-                ><input
-                  id="sheetKeep"
-                  type="checkbox"
-                  title="Keep the original colors for this region unchanged."
-                /><span>Keep original</span></span
-              >
-              <button
-                id="sheetRevert"
-                class="btn gray"
-                title="Revert this region to its original state or family color."
-              >
-                ↺ Revert
-              </button>
-            </div>
-          </div>
-          <div class="section">
-            <div class="kv">
-              <label>Darkness (ΔL)</label>
+              title="Click to change the color of the selected region."
+            >
               <input
-                id="sheetDark"
-                type="range"
-                min="-40"
-                max="40"
-                value="0"
-                title="Adjust the lightness/darkness of the selected region. Negative values make it darker, positive values make it lighter."
-              /><span id="sheetDarkVal">0</span>
-            </div>
+                id="sheetColor"
+                type="color"
+                value="#000000"
+                style="
+                  position: absolute;
+                  opacity: 0;
+                  width: 100%;
+                  height: 100%;
+                  cursor: pointer;
+                "
+                title="Manually set the color for the selected region."
+              />
+            </label>
           </div>
-          <div class="section">
-            <div class="row" style="gap: 8px; flex-wrap: wrap">
-              <button
-                id="pickFromPreview"
-                class="btn gray"
-                style="display: none"
-                title="Click this, then click on the shiny preview to pick a color from it."
-              >
-                🎯 Pick from preview
-              </button>
-              <button
-                id="pickFromTexture"
-                class="btn gray"
-                style="display: none"
-                title="Pick a color from a texture overlay. Select a texture first in the dropdown."
-              >
-                🎯 Pick from texture
-              </button>
+
+          <!-- Checkbox controls with revert button in compact layout -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr auto;
+              gap: 4px;
+              margin-bottom: 8px;
+              font-size: 11px;
+              align-items: center;
+            "
+          >
+            <label class="toggle" style="gap: 4px"
+              ><input
+                id="sheetLink"
+                type="checkbox"
+                checked
+                title="Link this region to its color family. When linked, individual pixel edits are cleared and the family color is used."
+              /><span>Link to family</span></label
+            >
+            <label class="toggle" style="gap: 4px"
+              ><input
+                id="sheetKeep"
+                type="checkbox"
+                title="Keep the original colors for this region unchanged."
+              /><span>Keep original</span></label
+            >
+            <button
+              id="sheetRevert"
+              class="btn gray small"
+              title="Revert this region to its original state or family color, and reset brightness to 0."
+            >
+              ↺ Revert
+            </button>
+          </div>
+
+          <!-- Darkness slider -->
+          <div class="kv" style="margin-bottom: 8px">
+            <label style="font-size: 12px">Darkness (ΔL)</label>
+            <input
+              id="sheetDark"
+              type="range"
+              min="-40"
+              max="40"
+              value="0"
+              title="Adjust the lightness/darkness of the selected region. Negative values make it darker, positive values make it lighter."
+            /><span id="sheetDarkVal" style="font-size: 12px">0</span>
+          </div>
+
+          <!-- Action buttons in compact grid -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 4px;
+              font-size: 11px;
+            "
+          >
+            <button
+              id="pickFromPreview"
+              class="btn gray small"
+              style="display: none"
+              title="Click this, then click on the shiny preview to pick a color from it."
+            >
+              🎯 Preview
+            </button>
+            <button
+              id="pickFromTexture"
+              class="btn gray small"
+              style="display: none"
+              title="Pick a color from a texture overlay. Select a texture first in the dropdown."
+            >
+              🎯 Texture
+            </button>
+            <div style="display: flex; align-items: center; gap: 4px">
               <button
                 id="colorPickAndApply"
-                class="btn gray"
+                class="btn gray small"
                 title="Pick color from Original, then click on Shiny to apply"
               >
                 Apply Multiple
               </button>
               <label
                 class="toggle"
-                style="font-size: 12px; margin-left: 4px; display: none"
+                id="pixelLevelModeLabel"
+                style="
+                  font-size: 11px;
+                  display: none;
+                  gap: 2px;
+                  white-space: nowrap;
+                "
                 title="Enable individual pixel-level editing instead of region-based editing."
               >
                 <input id="pixelLevelMode" type="checkbox" />
-                Individual pixels
+                <span>Individual pixels</span>
               </label>
-              <select
-                id="texChooser"
-                style="display: none; padding: 8px 10px"
-                class="btn gray"
-                title="Choose which shiny texture to use for color picking."
-              >
-                <option value="">(choose shiny texture)</option>
-              </select>
-              <span
-                id="pickedColorForApply"
-                style="
-                  display: none;
-                  align-items: center;
-                  gap: 4px;
-                  padding: 4px 8px;
-                  background: var(--bg2);
-                  border: 1px solid var(--bd);
-                  border-radius: 4px;
-                  font-size: 12px;
-                "
-              >
-                <span
-                  id="pickedColorSwatch"
-                  style="
-                    display: inline-block;
-                    width: 16px;
-                    height: 16px;
-                    border: 1px solid #444;
-                    border-radius: 2px;
-                    background: #000;
-                  "
-                ></span>
-                <span>Picked</span>
-              </span>
             </div>
+            <select
+              id="texChooser"
+              style="display: none; padding: 4px 6px; font-size: 11px"
+              class="btn gray"
+              title="Choose which shiny texture to use for color picking."
+            >
+              <option value="">(choose shiny texture)</option>
+            </select>
           </div>
+
+          <!-- Hidden elements -->
+          <span
+            id="pickedColorForApply"
+            style="
+              display: none;
+              align-items: center;
+              gap: 4px;
+              padding: 4px 8px;
+              background: var(--bg2);
+              border: 1px solid var(--bd);
+              border-radius: 4px;
+              font-size: 12px;
+              margin-top: 4px;
+            "
+          >
+            <span
+              id="pickedColorSwatch"
+              style="
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                border: 1px solid #444;
+                border-radius: 2px;
+                background: #000;
+              "
+            ></span>
+            <span>Picked</span>
+          </span>
         </fieldset>
 
         <fieldset>
           <legend>Home Texture Preview</legend>
-          <div>
-            <div class="canvasWrap" style="margin-bottom: 16px">
-              <legend
-                style="font-size: 12px; color: var(--mut); margin-bottom: 4px"
-              >
-                Shiny
-              </legend>
-              <canvas
-                id="homeTextureCanvas"
-                style="
-                  background: #fff;
-                  width: 100%;
-                  max-width: auto;
-                  height: auto;
-                  border: 1px solid var(--bd);
-                  border-radius: 10px;
-                  image-rendering: pixelated;
-                  display: none;
-                "
-              ></canvas>
-              <div
-                id="homeTextureStatus"
-                style="
-                  color: var(--mut);
-                  font-size: 12px;
-                  text-align: center;
-                  padding: 8px;
-                "
-              >
-                No shiny home texture
-              </div>
+
+          <!-- Shiny texture -->
+          <div class="canvasWrap" style="margin-bottom: 8px">
+            <legend
+              style="font-size: 11px; color: var(--mut); margin-bottom: 2px"
+            >
+              Shiny
+            </legend>
+            <canvas
+              id="homeTextureCanvas"
+              style="
+                background: #fff;
+                width: 100%;
+                max-width: auto;
+                height: auto;
+                border: 1px solid var(--bd);
+                border-radius: 6px;
+                image-rendering: pixelated;
+                display: none;
+              "
+            ></canvas>
+            <div
+              id="homeTextureStatus"
+              style="
+                color: var(--mut);
+                font-size: 11px;
+                text-align: center;
+                padding: 6px;
+              "
+            >
+              No shiny home texture
             </div>
-            <div class="canvasWrap">
-              <legend
-                style="font-size: 12px; color: var(--mut); margin-bottom: 4px"
-              >
-                Normal
-              </legend>
-              <canvas
-                id="homeTextureCanvasNormal"
-                style="
-                  background: #fff;
-                  width: 100%;
-                  max-width: auto;
-                  height: auto;
-                  border: 1px solid var(--bd);
-                  border-radius: 10px;
-                  image-rendering: pixelated;
-                  display: none;
-                "
-              ></canvas>
-              <div
-                id="homeTextureStatusNormal"
-                style="
-                  color: var(--mut);
-                  font-size: 12px;
-                  text-align: center;
-                  padding: 8px;
-                "
-              >
-                No normal home texture
-              </div>
+          </div>
+
+          <!-- Normal texture -->
+          <div class="canvasWrap">
+            <legend
+              style="font-size: 11px; color: var(--mut); margin-bottom: 2px"
+            >
+              Normal
+            </legend>
+            <canvas
+              id="homeTextureCanvasNormal"
+              style="
+                background: #fff;
+                width: 100%;
+                max-width: auto;
+                height: auto;
+                border: 1px solid var(--bd);
+                border-radius: 6px;
+                image-rendering: pixelated;
+                display: none;
+              "
+            ></canvas>
+            <div
+              id="homeTextureStatusNormal"
+              style="
+                color: var(--mut);
+                font-size: 11px;
+                text-align: center;
+                padding: 6px;
+              "
+            >
+              No normal home texture
             </div>
           </div>
         </fieldset>
@@ -639,13 +734,22 @@
       <div class="sheet-content">
         <div class="row">
           <h3>Hotkey Settings</h3>
-          <button
-            id="closeHotkeyModal"
-            class="btn gray"
-            title="Close the hotkey configuration menu."
-          >
-            Close
-          </button>
+          <div style="display: flex; gap: 8px;">
+            <button
+              id="saveHotkeys"
+              class="btn"
+              title="Save the current hotkey configuration."
+            >
+              Save Hotkeys
+            </button>
+            <button
+              id="closeHotkeyModal"
+              class="btn gray"
+              title="Close the hotkey configuration menu."
+            >
+              Close
+            </button>
+          </div>
         </div>
         <div class="section">
           <div class="kv">
@@ -755,15 +859,6 @@
               title="Hotkey to toggle zoom mode for magnified sprite viewing."
             />
           </div>
-        </div>
-        <div class="section">
-          <button
-            id="saveHotkeys"
-            class="btn"
-            title="Save the current hotkey configuration."
-          >
-            Save Hotkeys
-          </button>
         </div>
       </div>
     </div>

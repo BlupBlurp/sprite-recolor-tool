@@ -1090,6 +1090,37 @@ try {
   }
 } catch (e) {}
 
+// Debug toggle functionality
+let debugExpanded = false;
+$("#debugToggle").onclick = () => {
+  debugExpanded = !debugExpanded;
+  const content = $("#debugContent");
+  const arrow = $("#debugArrow");
+
+  if (debugExpanded) {
+    content.style.display = "block";
+    arrow.textContent = "▼";
+  } else {
+    content.style.display = "none";
+    arrow.textContent = "▶";
+  }
+
+  // Save the state to localStorage
+  try {
+    localStorage.setItem("bdsp_debug_expanded", debugExpanded.toString());
+  } catch (e) {}
+};
+
+// Initialize debug section state from localStorage
+try {
+  const savedState = localStorage.getItem("bdsp_debug_expanded");
+  if (savedState === "true") {
+    debugExpanded = true;
+    $("#debugContent").style.display = "block";
+    $("#debugArrow").textContent = "▼";
+  }
+} catch (e) {}
+
 /* ===== Initialize slider values ===== */
 function initializeSliderValues() {
   // Sync slider values with JavaScript variables and update display spans
@@ -1656,8 +1687,8 @@ function updateZoomOverlay(canvasId, overlayId, zoomCanvasId, mouseX, mouseY) {
 
   // Simple positioning: small offset from cursor
   const overlaySize = 100; // Still needed for zoom calculations
-  overlay.style.left = (mouseX - 350) + "px";
-  overlay.style.top = (mouseY - 125) + "px";
+  overlay.style.left = mouseX - 350 + "px";
+  overlay.style.top = mouseY - 125 + "px";
   overlay.style.display = "block";
 
   // Draw zoomed content
@@ -2379,6 +2410,12 @@ $("#sheetRevert").onclick = () => {
   const c = labToHex(R.linked || !R.lab ? famShinyLab[R.fam] : R.lab);
   $("#sheetColor").value = c;
   $("#pickedSwatch").style.background = c;
+
+  // Reset brightness/darkness to 0
+  regionDark[selectedRegion] = 0;
+  $("#sheetDark").value = 0;
+  $("#sheetDarkVal").textContent = "0";
+
   renderPanel();
   applyShiny();
 };
@@ -2614,8 +2651,7 @@ document.getElementById("colorPickAndApply").onclick = () => {
     document.getElementById("colorPickAndApply").style.background = "";
     document.getElementById("pickedColorForApply").style.display = "none";
     // Hide the individual pixels toggle
-    document.getElementById("pixelLevelMode").parentElement.style.display =
-      "none";
+    document.getElementById("pixelLevelModeLabel").style.display = "none";
     st("Apply Multiple mode disabled");
   } else {
     // Enable mode
@@ -2627,8 +2663,8 @@ document.getElementById("colorPickAndApply").onclick = () => {
       "var(--acc)";
     document.getElementById("pickedColorForApply").style.display = "none";
     // Show the individual pixels toggle
-    document.getElementById("pixelLevelMode").parentElement.style.display =
-      "inline-block";
+    document.getElementById("pixelLevelModeLabel").style.display =
+      "inline-flex";
     renderPanel(); // Update UI to reflect no region selected
     st("Apply Multiple mode: Click Original to pick color");
   }
