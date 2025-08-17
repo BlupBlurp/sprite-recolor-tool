@@ -30,14 +30,27 @@ const toast = (msg) => {
   setTimeout(() => t.remove(), 2200);
 };
 const st = (t) => {
-  $("#status").textContent = t;
+  const statusEl = $("#status");
+  statusEl.textContent = t;
+
+  // Add loading class for status messages containing "…" or ending with "..."
+  if (t.includes("…") || t.endsWith("...")) {
+    document.body.classList.add("loading");
+  } else {
+    document.body.classList.remove("loading");
+  }
 };
-window.addEventListener("error", (e) =>
-  toast("Error: " + (e.message || "unknown"))
-);
-window.addEventListener("unhandledrejection", (e) =>
-  toast("Error: " + ((e.reason && e.reason.message) || "promise"))
-);
+window.addEventListener("error", (e) => {
+  const errorMsg = e.message || "An unexpected error occurred";
+  toast(`Error: ${errorMsg}`);
+  st(`Error: ${errorMsg}`);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const errorMsg =
+    (e.reason && e.reason.message) || "An unexpected error occurred";
+  toast(`Error: ${errorMsg}`);
+  st(`Error: ${errorMsg}`);
+});
 
 const trimPM = (name) => name.replace(/^pm\d{4}_/i, "");
 const SPRITE_RE = /^pm\d{4}_\d{2}_\d{2}\.png$/i;
@@ -341,6 +354,7 @@ let currentSpriteFile = null;
 let folderJustChanged = false; // Flag to track folder changes
 
 $("#pickRoot").addEventListener("change", (e) => {
+  st("Loading folder structure...");
   pickedFiles = [...e.target.files].map((f) => ({
     file: f,
     rel: f.webkitRelativePath || f.name,
@@ -432,13 +446,8 @@ function renderTextureList() {
   }
 
   currentTextures = [];
-  const q = ($("#texFilter")?.value || "").toLowerCase().trim();
   const sortedForms = [...forms.keys()].sort();
   for (const form of sortedForms) {
-    if (q && !form.toLowerCase().includes(q)) {
-      const any = [...forms.get(form).keys()].some((k) => k.includes(q));
-      if (!any) continue;
-    }
     const group = document.createElement("div");
     group.className = "item";
     const master = document.createElement("input");
@@ -460,7 +469,6 @@ function renderTextureList() {
     for (const k of keys) {
       const pair = bySuf.get(k);
       if (!pair.N) continue;
-      if (q && !k.includes(q)) continue;
       const row = document.createElement("div");
       row.className = "item";
       row.style.marginLeft = "22px";
@@ -484,10 +492,6 @@ function renderTextureList() {
   }
   updateSelectedTextures();
 }
-(() => {
-  const tf = $("#texFilter");
-  if (tf) tf.addEventListener("input", renderTextureList);
-})();
 
 function updateSelectedTextures() {
   if (!currentFolder) {
@@ -540,7 +544,7 @@ function updateSelectedTextures() {
           fillTexDropdown();
           if (typeof applyShiny === "function") applyShiny();
           if (typeof drawDebug === "function") drawDebug();
-          st("");
+          st("Textures loaded successfully");
         })();
       } else {
         // No sprite loaded OR folder just changed, do full reload
@@ -628,8 +632,19 @@ function navigatePokemon(direction) {
   const newIndex = currentIndex + direction;
 
   if (newIndex > 0 && newIndex < folderSel.options.length) {
+    const newOption = folderSel.options[newIndex];
     folderSel.selectedIndex = newIndex;
     folderSel.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // Get Pokémon name from the option text
+    const optionText = newOption.textContent;
+    const pokemonName = optionText.includes(".")
+      ? optionText.split(". ")[1].split(" (")[0]
+      : optionText;
+    st(`Switched to ${pokemonName}`);
+  } else {
+    const action = direction > 0 ? "next" : "previous";
+    st(`No ${action} Pokémon available`);
   }
 }
 
@@ -1030,10 +1045,12 @@ $("#colorTolerance").oninput = (e) => {
 };
 $("#showDebug").onchange = (e) => {
   drawDebug();
+  st(e.target.checked ? "Debug overlay enabled" : "Debug overlay disabled");
 };
 $("#showRegionOutline").onchange = (e) => {
   showRegionOutline = e.target.checked;
   drawDebug();
+  st(e.target.checked ? "Region outline enabled" : "Region outline disabled");
 };
 
 // Initialize the state based on checkbox
@@ -1111,6 +1128,8 @@ initializeSeed();
 
 $("#recluster").onclick = () => {
   if (!sprite) return;
+
+  st("Reclustering regions...");
 
   // Check if we're in multi-seed preview mode
   const isMultiSeedMode = $("#multiSeedPreview").checked;
@@ -1366,6 +1385,8 @@ function selectPreviewSeed(previewIndex) {
 
 // Restore all settings to default values
 $("#restoreDefaults").onclick = () => {
+  st("Restoring default settings...");
+
   const defaultSettings = {
     kFamilies: 32,
     PROTECT_NEAR_BLACK: 8,
@@ -1386,6 +1407,7 @@ $("#restoreDefaults").onclick = () => {
   }
 
   toast("Settings restored to defaults");
+  st("Default settings applied");
 };
 
 // Allow pressing Enter in the seed input to trigger recluster
@@ -1396,6 +1418,9 @@ $("#seedInput").addEventListener("keypress", (e) => {
 });
 $("#saveBtn").onclick = () => {
   if (!sprite) return;
+
+  st("Preparing download...");
+
   const a = document.createElement("a");
   const orig = currentSpriteFile?.name || "sprite.png";
   // pm####_##_##.png  ->  pm####_##_#1.png
@@ -1411,6 +1436,8 @@ $("#saveBtn").onclick = () => {
   a.download = outName;
   a.href = $("#c1").toDataURL("image/png");
   a.click();
+
+  st(`Saved as ${outName}`);
 };
 
 /* ===== Load shiny sprite functionality ===== */
@@ -1627,22 +1654,10 @@ function updateZoomOverlay(canvasId, overlayId, zoomCanvasId, mouseX, mouseY) {
   const canvasX = ((mouseX - rect.left) * canvas.width) / rect.width;
   const canvasY = ((mouseY - rect.top) * canvas.height) / rect.height;
 
-  // Position the overlay near the cursor but offset to avoid blocking
-  const overlaySize = 100;
-  const offset = 20;
-  let overlayX = mouseX + offset;
-  let overlayY = mouseY - overlaySize - offset;
-
-  // Keep overlay within viewport
-  if (overlayX + overlaySize > window.innerWidth) {
-    overlayX = mouseX - overlaySize - offset;
-  }
-  if (overlayY < 0) {
-    overlayY = mouseY + offset;
-  }
-
-  overlay.style.left = overlayX + "px";
-  overlay.style.top = overlayY + "px";
+  // Simple positioning: small offset from cursor
+  const overlaySize = 100; // Still needed for zoom calculations
+  overlay.style.left = (mouseX - 350) + "px";
+  overlay.style.top = (mouseY - 125) + "px";
   overlay.style.display = "block";
 
   // Draw zoomed content
@@ -2330,6 +2345,7 @@ $("#sheetColor").oninput = (e) => {
   if (sw) sw.style.background = e.target.value;
   applyShiny();
   renderPanel();
+  st(`Applied custom color to region ${rid + 1}`);
 };
 $("#sheetRevert").onclick = () => {
   const R = regions[selectedRegion];
