@@ -3447,6 +3447,7 @@ function featherOutline(outSel, guideSel, radius = 1, feather = 0.3) {
 /* ===== hotkeys ===== */
 const HK_DEFAULT = {
   open: "?",
+  tutorial: "h",
   load: "l",
   save: "s",
   recluster: "r",
@@ -3497,6 +3498,11 @@ function applyHKBindings() {
     if (k === HK.open) {
       e.preventDefault();
       openHotkeyModal();
+      return;
+    }
+    if (k === HK.tutorial) {
+      e.preventDefault();
+      openTutorialModal();
       return;
     }
     if (k === HK.load) {
@@ -3611,6 +3617,7 @@ function bumpDark(delta) {
 }
 function openHotkeyModal() {
   keyCaptureInput($("#hkOpen"), "open");
+  keyCaptureInput($("#hkTutorial"), "tutorial");
   keyCaptureInput($("#hkLoad"), "load");
   keyCaptureInput($("#hkSave"), "save");
   keyCaptureInput($("#hkRecluster"), "recluster");
@@ -3643,6 +3650,51 @@ $("#hotkeyModal").onclick = (e) => {
     $("#hotkeyModal").style.display = "none";
   }
 };
+
+// Tutorial Modal Functions
+async function openTutorialModal() {
+  try {
+    // Load tutorial content if not already loaded
+    const tutorialContent = $("#tutorialContent");
+    if (
+      !tutorialContent.innerHTML.trim() ||
+      tutorialContent.innerHTML.includes("will be loaded here")
+    ) {
+      const response = await fetch("./tutorial.html");
+      if (!response.ok) throw new Error("Failed to load tutorial");
+      const html = await response.text();
+      tutorialContent.innerHTML = html;
+
+      // Re-bind the close button after loading content
+      $("#closeTutorialModal").onclick = () =>
+        ($("#tutorialModal").style.display = "none");
+    }
+    $("#tutorialModal").style.display = "flex";
+  } catch (error) {
+    console.error("Error loading tutorial:", error);
+    // Fallback: show a simple message
+    $("#tutorialContent").innerHTML = `
+      <div class="row">
+        <h3>Tutorial - How to Use the Shiny Recolor Tool</h3>
+        <button id="closeTutorialModal" class="btn gray">Close</button>
+      </div>
+      <p>Tutorial content could not be loaded. Please check that tutorial.html is available.</p>
+    `;
+    $("#closeTutorialModal").onclick = () =>
+      ($("#tutorialModal").style.display = "none");
+    $("#tutorialModal").style.display = "flex";
+  }
+}
+
+$("#tutorialBtn").onclick = () => openTutorialModal();
+
+// Close tutorial modal when clicking outside the content
+$("#tutorialModal").onclick = (e) => {
+  if (e.target === $("#tutorialModal")) {
+    $("#tutorialModal").style.display = "none";
+  }
+};
+
 applyHKBindings();
 function stepRegion(dir) {
   if (!regions.length) return;

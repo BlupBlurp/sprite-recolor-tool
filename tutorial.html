@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!-- Tutorial Modal Content -->
+<div class="row">
+  <h3>Tutorial - How to Use the Shiny Recolor Tool</h3>
+  <button id="closeTutorialModal" class="btn gray" title="Close the tutorial.">
+    Close
+  </button>
+</div>
+
+<div class="tutorial-section">
+  <h4>Getting Started</h4>
+  <p>
+    <strong>Pick Root Folder:</strong> Select the main folder containing your
+    Pokémon mod files. The tool expects folders named
+    <code>pm####_##_##/</code> with texture files and
+    <code>icon/</code> subfolders containing sprites.
+  </p>
+  <p>
+    <strong>Select Pokémon:</strong> Use the dropdown to choose which Pokémon to
+    work with. Navigate between Pokémon using the ‹ and › buttons or hotkeys.
+  </p>
+</div>
+
+<div class="tutorial-section">
+  <h4>Core Algorithm Settings</h4>
+  <div class="tutorial-item">
+    <h5>Family Count (5-48, default: 32)</h5>
+    <p>
+      Controls how many color groups the sprite is divided into.
+      <strong>Lower values</strong> (8-16) work best for simple sprites with few
+      colors. <strong>Higher values</strong> (32-48) are better for complex
+      sprites with many color variations.
+    </p>
+    <p>
+      <em
+        >Tip: Start with 14-20 for most sprites, then adjust based on
+        results.</em
+      >
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Protect Outline (0-50, default: 8)</h5>
+    <p>
+      Prevents dark pixels (like outlines and shadows) from being recolored.
+      Higher values protect more pixels. Use 0 if you want to recolor
+      everything, or 15-25 for strong outline protection.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Smoothing (0-5, default: 1)</h5>
+    <p>
+      Reduces noise and artifacts by blending neighboring pixels. Higher values
+      create smoother transitions but may blur details. Use 0 for pixel-perfect
+      results, 2-3 for very noisy sprites.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Blending (0-100%, default: 45%)</h5>
+    <p>
+      Controls how much smoothing is applied. Works with the Smoothing setting.
+      Higher values create more blended, softer colors.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Contrast (50-170%, default: 110%)</h5>
+    <p>
+      Adjusts the final contrast of the shiny sprite. Values above 100% increase
+      contrast, below 100% reduce it. Useful for making colors pop or creating
+      subtle effects.
+    </p>
+  </div>
+</div>
+
+<div class="tutorial-section">
+  <h4>Manual Color Controls</h4>
+  <h5>Color Families</h5>
+  <p>
+    The sprite is automatically divided into color families. Click on regions in
+    the sprite to select and modify them.
+  </p>
+
+  <div class="tutorial-item">
+    <h5>Manual Color Picker</h5>
+    <p>
+      Click the color swatch next to "Family" to manually set a color for the
+      selected region.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Clear Pixels</h5>
+    <p>
+      When checked, uses automatic color suggestions. Uncheck to manually
+      control individual pixels within a family.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Keep Original</h5>
+    <p>
+      Preserves the original colors for the selected family area. Useful for
+      maintaining certain details unchanged.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Darkness (ΔL)</h5>
+    <p>
+      Adjusts the lightness/darkness of the selected family. Negative values
+      make it darker, positive values make it lighter. Great for fine-tuning
+      brightness.
+    </p>
+  </div>
+</div>
+
+<div class="tutorial-section">
+  <h4>Advanced Tools</h4>
+  <div class="tutorial-item">
+    <h5>Apply Multiple</h5>
+    <p>
+      Pick a color from the Original canvas, then click on multiple regions in
+      the Shiny canvas to apply that color to several families at once.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Load Shiny</h5>
+    <p>
+      Load an existing shiny sprite to continue editing or use as a starting
+      point.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Zoom Mode</h5>
+    <p>
+      Enable to see a magnified view when hovering over sprites. Essential for
+      precise pixel-level editing.
+    </p>
+  </div>
+
+  <div class="tutorial-item">
+    <h5>Debug Overlays</h5>
+    <p>
+      Show protected pixels, family outlines, and other debug information to
+      understand how the algorithm processes your sprite.
+    </p>
+  </div>
+</div>
+
+<div class="tutorial-section">
+  <h4>Best Practices & Tips</h4>
+  <ul>
+    <li>
+      <strong>Start Simple:</strong> Begin with default settings, then adjust
+      Family Count based on your sprite's complexity.
+    </li>
+    <li>
+      <strong>Texture Quality:</strong> The tool works best when normal and
+      shiny textures have clear color differences.
+    </li>
+    <li>
+      <strong>Iterative Process:</strong> Use Recluster after changing settings
+      to see how they affect the color grouping.
+    </li>
+    <li>
+      <strong>Save Often:</strong> Save your work frequently as you make
+      adjustments.
+    </li>
+    <li>
+      <strong>Use Hotkeys:</strong> Configure hotkeys for common actions to
+      speed up your workflow.
+    </li>
+    <li>
+      <strong>Family Count Guidelines:</strong>
+      <ul>
+        <li>Simple sprites (2-4 main colors): 8-16 families</li>
+        <li>Medium complexity: 16-24 families</li>
+        <li>Complex sprites (many gradients): 32+ families</li>
+      </ul>
+    </li>
+    <li>
+      <strong>Problem Solving:</strong>
+      <ul>
+        <li>Too many small regions? Decrease Family Count</li>
+        <li>Colors not distinct enough? Increase Family Count</li>
+        <li>Outlines getting recolored? Increase Protect Outline</li>
+        <li>Result too noisy? Increase Smoothing and Blending</li>
+      </ul>
+    </li>
+  </ul>
+</div>
+
+<div class="tutorial-section">
+  <h4>Workflow Example</h4>
+  <ol>
+    <li>Pick your root folder containing Pokémon mod files</li>
+    <li>Select a Pokémon from the dropdown</li>
+    <li>
+      The tool automatically loads textures and generates an initial shiny
+      sprite
+    </li>
+    <li>Adjust Family Count based on sprite complexity (start with 14-20)</li>
+    <li>Click Recluster to apply the new family count</li>
+    <li>Fine-tune other settings (Protect Outline, Smoothing, etc.)</li>
+    <li>Manually adjust individual families using the color controls</li>
+    <li>Use Apply Multiple for quick color application across families</li>
+    <li>Save your final result as PNG</li>
+  </ol>
+</div>

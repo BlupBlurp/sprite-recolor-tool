@@ -529,6 +529,119 @@ input[type="color"]:hover {
   margin-bottom: 16px;
 }
 
+/* Tutorial Modal Specific Styles */
+#tutorialModal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#tutorialModal.show {
+  display: flex;
+}
+
+#tutorialModal .sheet-content {
+  background: #0b1020;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+#tutorialModal .row {
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.tutorial-section {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--bd);
+}
+
+.tutorial-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.tutorial-section h4 {
+  color: var(--acc);
+  font-size: 18px;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+}
+
+.tutorial-section h5 {
+  color: var(--fg);
+  font-size: 14px;
+  margin: 0 0 6px 0;
+  font-weight: 500;
+}
+
+.tutorial-section p {
+  color: var(--fg);
+  line-height: 1.5;
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.tutorial-section em {
+  color: var(--acc);
+  font-style: normal;
+  font-weight: 500;
+}
+
+.tutorial-section code {
+  background: var(--bg2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  color: var(--acc);
+}
+
+.tutorial-item {
+  margin-bottom: 16px;
+}
+
+.tutorial-section ul {
+  margin: 8px 0;
+  padding-left: 20px;
+  color: var(--fg);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tutorial-section ol {
+  margin: 8px 0;
+  padding-left: 20px;
+  color: var(--fg);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tutorial-section li {
+  margin-bottom: 4px;
+}
+
+.tutorial-section ul ul {
+  margin: 4px 0;
+}
+
 /* Unified slider section styling for Settings and Experimental */
 .settings-controls,
 .experimental-controls {

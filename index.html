@@ -304,48 +304,65 @@
           >
             <h1 style="margin: 0">Pokémon Shiny Recolor Tool</h1>
           </div>
-          <div class="controls">
-            <label class="btn"
-              ><input
-                id="pickRoot"
-                type="file"
-                webkitdirectory
-                multiple
-                accept="image/*"
-                title="Select the root folder containing Pokémon texture files to work with."
-              />Pick Root Folder</label
-            >
-            <label class="btn" id="loadShinyLabel"
-              ><input
-                id="loadShiny"
-                type="file"
-                accept="image/png"
-                title="Load an existing shiny sprite for editing."
-                style="display: none"
-                disabled
-              />Load Shiny</label
-            >
-            <button
-              id="saveBtn"
-              class="btn gray"
-              title="Save the current shiny sprite as a PNG file."
-            >
-              Save PNG
-            </button>
-            <button
-              id="hotkeyBtn"
-              class="btn gray"
-              title="Open the hotkey configuration menu to customize keyboard shortcuts."
-            >
-              Hotkeys
-            </button>
-            <button
-              id="zoomToggle"
-              class="btn gray"
-              title="Toggle zoom mode to see magnified view when hovering over sprites."
-            >
-              Zoom Mode
-            </button>
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-end;
+            "
+          >
+            <div class="controls">
+              <label class="btn"
+                ><input
+                  id="pickRoot"
+                  type="file"
+                  webkitdirectory
+                  multiple
+                  accept="image/*"
+                  title="Select the root folder containing Pokémon texture files to work with."
+                />Pick Root Folder</label
+              >
+              <label class="btn" id="loadShinyLabel"
+                ><input
+                  id="loadShiny"
+                  type="file"
+                  accept="image/png"
+                  title="Load an existing shiny sprite for editing."
+                  style="display: none"
+                  disabled
+                />Load Shiny</label
+              >
+              <button
+                id="saveBtn"
+                class="btn gray"
+                title="Save the current shiny sprite as a PNG file."
+              >
+                Save PNG
+              </button>
+            </div>
+            <div class="controls">
+              <button
+                id="zoomToggle"
+                class="btn gray"
+                title="Toggle zoom mode to see magnified view when hovering over sprites."
+              >
+                Zoom Mode
+              </button>
+              <button
+                id="hotkeyBtn"
+                class="btn gray"
+                title="Open the hotkey configuration menu to customize keyboard shortcuts."
+              >
+                Hotkeys
+              </button>
+              <button
+                id="tutorialBtn"
+                class="btn gray"
+                title="Open the tutorial to learn how to use the tool effectively."
+              >
+                Tutorial
+              </button>
+            </div>
           </div>
         </div>
 
@@ -768,6 +785,13 @@
               placeholder="?"
               title="Hotkey to open this hotkey configuration menu."
             />
+            <label>Tutorial</label
+            ><input
+              id="hkTutorial"
+              type="text"
+              placeholder="h"
+              title="Hotkey to open the tutorial guide."
+            />
             <label>Load Selected</label
             ><input
               id="hkLoad"
@@ -871,6 +895,15 @@
       </div>
     </div>
 
+    <!-- Tutorial Modal -->
+    <!-- Tutorial Modal -->
+    <div id="tutorialModal" class="modal-overlay">
+      <div class="sheet-content" id="tutorialContent">
+        <!-- Tutorial content will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Texture Eyedropper -->
     <!-- Texture Eyedropper -->
     <div
       id="pickerOverlay"
