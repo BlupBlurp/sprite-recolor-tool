@@ -38,11 +38,21 @@
                 ›
               </button>
             </div>
-            <div id="texList" class="list">
-              <small
-                >Select normal <code>*_col.png</code>. Matching
-                <code>*_col_rare</code> is used internally.</small
-              >
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Textures</legend>
+          <div class="kv kv-onecol">
+            <input
+              id="texFilter"
+              type="text"
+              placeholder="Filter textures..."
+              style="width: 100%; margin-bottom: 8px"
+              title="Filter the texture list by typing part of the texture name"
+            />
+            <div id="texList" style="max-height: 200px; overflow-y: auto">
+              <small>Select a folder to list textures</small>
             </div>
           </div>
         </fieldset>
@@ -192,6 +202,14 @@
             >
               Restore Defaults
             </button>
+            <label class="toggle"
+              ><input
+                id="multiSeedPreview"
+                type="checkbox"
+                title="Shows 4 different seed variations in a 2x2 grid. Click on any variant to select it and exit preview mode."
+              />
+              Multi-seed Preview</label
+            >
             <div class="row" style="gap: 4px; margin-top: 8px">
               <label style="font-size: 12px; color: #888">Seed:</label>
               <span
@@ -316,7 +334,61 @@
           <div class="canvasWrap">
             <fieldset>
               <legend>Shiny</legend>
-              <canvas id="c1"></canvas>
+              <!-- Normal single canvas mode -->
+              <div id="singleCanvasMode">
+                <canvas id="c1"></canvas>
+              </div>
+              <!-- Multi-seed preview mode with 4 canvas in 2x2 grid -->
+              <div id="multiSeedMode" style="display: none">
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px;
+                  "
+                >
+                  <div style="text-align: center">
+                    <canvas
+                      id="c1_preview1"
+                      style="cursor: pointer"
+                      title="Click to select this variant"
+                    ></canvas>
+                    <div class="seed-display">
+                      Seed: <span id="seed1">-</span>
+                    </div>
+                  </div>
+                  <div style="text-align: center">
+                    <canvas
+                      id="c1_preview2"
+                      style="cursor: pointer"
+                      title="Click to select this variant"
+                    ></canvas>
+                    <div class="seed-display">
+                      Seed: <span id="seed2">-</span>
+                    </div>
+                  </div>
+                  <div style="text-align: center">
+                    <canvas
+                      id="c1_preview3"
+                      style="cursor: pointer"
+                      title="Click to select this variant"
+                    ></canvas>
+                    <div class="seed-display">
+                      Seed: <span id="seed3">-</span>
+                    </div>
+                  </div>
+                  <div style="text-align: center">
+                    <canvas
+                      id="c1_preview4"
+                      style="cursor: pointer"
+                      title="Click to select this variant"
+                    ></canvas>
+                    <div class="seed-display">
+                      Seed: <span id="seed4">-</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </fieldset>
             <canvas id="cGuide" style="display: none"></canvas>
             <canvas id="dbg1" class="debugOverlay"></canvas>

@@ -1112,31 +1112,257 @@ initializeSeed();
 $("#recluster").onclick = () => {
   if (!sprite) return;
 
-  // Check if there's a seed in the input field
-  const seedInput = $("#seedInput");
-  const inputSeed = seedInput.value.trim();
+  // Check if we're in multi-seed preview mode
+  const isMultiSeedMode = $("#multiSeedPreview").checked;
 
-  if (inputSeed) {
-    // Parse extended seed format
-    const parsed = parseExtendedSeed(inputSeed);
+  if (isMultiSeedMode) {
+    generateMultiSeedPreview();
+  } else {
+    // Normal single seed mode
+    // Check if there's a seed in the input field
+    const seedInput = $("#seedInput");
+    const inputSeed = seedInput.value.trim();
 
-    // Set the seed
-    setSeed(parsed.seed);
+    if (inputSeed) {
+      // Parse extended seed format
+      const parsed = parseExtendedSeed(inputSeed);
 
-    // Apply settings if they exist
-    if (parsed.settings) {
-      applySettings(parsed.settings);
+      // Set the seed
+      setSeed(parsed.seed);
+
+      // Apply settings if they exist
+      if (parsed.settings) {
+        applySettings(parsed.settings);
+      }
+
+      seedInput.value = "";
+    } else {
+      // Generate new random seed
+      setSeed(null);
     }
 
-    seedInput.value = "";
-  } else {
-    // Generate new random seed
-    setSeed(null);
+    computeFamiliesAndRegions();
+    applyShiny();
+  }
+};
+
+// Multi-seed preview functionality
+let previewSeeds = [];
+
+function generateMultiSeedPreview() {
+  console.log("Generating multi-seed preview...");
+
+  // Generate 4 different random seeds
+  previewSeeds = [];
+  for (let i = 0; i < 4; i++) {
+    previewSeeds.push(Math.floor(Math.random() * 2147483647));
   }
 
+  console.log("Preview seeds:", previewSeeds);
+
+  // Show multi-seed mode
+  $("#singleCanvasMode").style.display = "none";
+  $("#multiSeedMode").style.display = "block";
+
+  // Generate previews for each seed
+  for (let i = 0; i < 4; i++) {
+    console.log(`Generating preview ${i + 1} with seed ${previewSeeds[i]}`);
+    generatePreviewForSeed(i + 1, previewSeeds[i]);
+  }
+
+  console.log("Multi-seed preview generation complete");
+}
+
+function generatePreviewForSeed(previewIndex, seed) {
+  // Save current state
+  const originalSeed = currentSeed;
+  const originalRngState = rngState;
+  const originalFamCenters = famCenters ? [...famCenters] : [];
+  const originalFamShinyLab = famShinyLab ? [...famShinyLab] : [];
+  const originalAssignFam = assignFam ? [...assignFam] : null;
+  const originalRegions = regions ? regions.map((r) => ({ ...r })) : [];
+  const originalRegionIds = regionIds ? [...regionIds] : null;
+
+  try {
+    // Set the preview seed
+    setSeed(seed);
+
+    // Compute families and regions with this seed
+    computeFamiliesAndRegions();
+
+    // Get the preview canvas and set its dimensions
+    const previewCanvas = $(`#c1_preview${previewIndex}`);
+    const originalCanvas = $("#c1");
+
+    if (!previewCanvas || !originalCanvas) return;
+
+    previewCanvas.width = originalCanvas.width || width;
+    previewCanvas.height = originalCanvas.height || height;
+
+    // Apply shiny effect to preview canvas
+    applyShinyToCanvas(previewCanvas);
+
+    // Update seed display
+    $(`#seed${previewIndex}`).textContent = seed;
+  } catch (error) {
+    console.error(`Error generating preview ${previewIndex}:`, error);
+    // Clear the canvas on error
+    const previewCanvas = $(`#c1_preview${previewIndex}`);
+    if (previewCanvas) {
+      const ctx = previewCanvas.getContext("2d");
+      ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+    }
+    $(`#seed${previewIndex}`).textContent = "Error";
+  } finally {
+    // Restore original state
+    currentSeed = originalSeed;
+    rngState = originalRngState;
+    if (originalFamCenters.length) famCenters = originalFamCenters;
+    if (originalFamShinyLab.length) famShinyLab = originalFamShinyLab;
+    if (originalAssignFam) assignFam = originalAssignFam;
+    if (originalRegions.length) regions = originalRegions;
+    if (originalRegionIds) regionIds = originalRegionIds;
+  }
+}
+
+function applyShinyToCanvas(targetCanvas) {
+  // Apply the shiny effect to a specific canvas (used for multi-seed preview)
+  if (!pixLabs || !assignFam || !regions.length || !targetCanvas) {
+    return;
+  }
+
+  const ctx = targetCanvas.getContext("2d");
+  const id = ctx.createImageData(width, height);
+  const D = id.data;
+
+  for (let p = 0, i = 0; p < pixLabs.length; p++, i += 4) {
+    if (pixMask[p] === 0) {
+      D[i + 3] = 0;
+      continue;
+    }
+    const r = pixRGB[i],
+      g = pixRGB[i + 1],
+      b = pixRGB[i + 2],
+      a = pixRGB[i + 3];
+    const rid = regionIds ? regionIds[p] : -1;
+    if (pixMask[p] === 2) {
+      D[i] = r;
+      D[i + 1] = g;
+      D[i + 2] = b;
+      D[i + 3] = a;
+      continue;
+    }
+
+    const fam = assignFam[p];
+    if (fam < 0) {
+      D[i] = r;
+      D[i + 1] = g;
+      D[i + 2] = b;
+      D[i + 3] = a;
+      continue;
+    }
+    const R = regions[rid];
+    if (!R || R.deleted) {
+      D[i] = r;
+      D[i + 1] = g;
+      D[i + 2] = b;
+      D[i + 3] = a;
+      continue;
+    }
+    if (R.keep) {
+      if (loadedShinySprite && originalSpriteData) {
+        const originalIndex = p * 4;
+        D[i] = originalSpriteData.data[originalIndex];
+        D[i + 1] = originalSpriteData.data[originalIndex + 1];
+        D[i + 2] = originalSpriteData.data[originalIndex + 2];
+        D[i + 3] = originalSpriteData.data[originalIndex + 3];
+      } else {
+        D[i] = r;
+        D[i + 1] = g;
+        D[i + 2] = b;
+        D[i + 3] = a;
+      }
+      continue;
+    }
+
+    const base = R.linked || !R.lab ? famShinyLab[fam] : R.lab;
+
+    // Apply color transformation similar to main applyShiny function
+    let Lp =
+      base[0] + (pixLabs[p][0] - famCenters[fam][0]) + (regionDark[rid] || 0);
+    Lp = 50 + (Lp - 50) * contrastFactor;
+    if (Lp < 0) Lp = 0;
+    if (Lp > 100) Lp = 100;
+
+    const c = labToRgb(Lp, base[1], base[2]);
+    D[i] = c[0];
+    D[i + 1] = c[1];
+    D[i + 2] = c[2];
+    D[i + 3] = a;
+  }
+
+  ctx.putImageData(id, 0, 0);
+
+  // Apply smoothing if enabled (simplified for preview)
+  const px = +$("#smoothPx").value;
+  const blend = +$("#smoothAmt").value / 100;
+  if (px > 0 && blend > 0) {
+    // For preview canvases, we'll skip the advanced smoothing to keep it simple
+    // The user can see the full effect when they select a preview
+  }
+}
+
+// Handle multi-seed preview mode toggle
+$("#multiSeedPreview").onchange = (e) => {
+  if (e.target.checked) {
+    // Entering multi-seed mode
+    if (sprite) {
+      generateMultiSeedPreview();
+    }
+  } else {
+    // Exiting multi-seed mode
+    $("#singleCanvasMode").style.display = "block";
+    $("#multiSeedMode").style.display = "none";
+
+    // Re-render the current sprite
+    if (sprite) {
+      applyShiny();
+    }
+  }
+};
+
+// Add click handlers for preview canvas selection
+function setupPreviewClickHandlers() {
+  for (let i = 1; i <= 4; i++) {
+    const canvas = $(`#c1_preview${i}`);
+    if (canvas) {
+      canvas.onclick = () => {
+        selectPreviewSeed(i);
+      };
+    }
+  }
+}
+
+// Call setup after a small delay to ensure DOM is ready
+setTimeout(setupPreviewClickHandlers, 100);
+
+function selectPreviewSeed(previewIndex) {
+  const selectedSeed = previewSeeds[previewIndex - 1];
+
+  // Set the selected seed as current
+  setSeed(selectedSeed);
+
+  // Exit multi-seed preview mode
+  $("#multiSeedPreview").checked = false;
+  $("#singleCanvasMode").style.display = "block";
+  $("#multiSeedMode").style.display = "none";
+
+  // Apply the selected seed
   computeFamiliesAndRegions();
   applyShiny();
-};
+
+  toast(`Selected seed: ${selectedSeed}`);
+}
 
 // Restore all settings to default values
 $("#restoreDefaults").onclick = () => {
