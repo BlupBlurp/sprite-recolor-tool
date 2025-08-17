@@ -391,7 +391,7 @@ function indexFolders() {
     loadShinyInput.disabled = false;
     loadShinyLabel.style.opacity = "1";
     loadShinyLabel.title = "Load an existing shiny sprite for editing.";
-    
+
     // Auto-select the first Pokémon in the list
     const sel = $("#folderSel");
     if (sel.options && sel.options.length > 1) {
@@ -1888,6 +1888,11 @@ function fillTexDropdown() {
 
 /* ===== sprite cache ===== */
 function drawSprite() {
+  // Check if sprite is loaded before trying to draw it
+  if (!sprite || !sprite.naturalWidth) {
+    return;
+  }
+
   const c0 = $("#c0");
   width = c0.width = sprite.naturalWidth;
   height = c0.height = sprite.naturalHeight;
