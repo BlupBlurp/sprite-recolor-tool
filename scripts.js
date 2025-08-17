@@ -973,6 +973,7 @@ let spatialWeight = 0; // 0-1, weight for spatial similarity in color matching
 let colorTolerance = 0; // 0-1, tolerance for adaptive color thresholds
 let zoomMode = false; // Zoom feature state
 let showRegionOutline = false; // Show selected family outline
+let showAllFamilies = false; // Show all families outline
 
 /* ===== sliders/toggles ===== */
 $("#k").oninput = (e) => {
@@ -1052,9 +1053,19 @@ $("#showRegionOutline").onchange = (e) => {
   drawDebug();
   st(e.target.checked ? "Family outline enabled" : "Family outline disabled");
 };
+$("#showAllFamilies").onchange = (e) => {
+  showAllFamilies = e.target.checked;
+  drawDebug();
+  st(
+    e.target.checked
+      ? "All families outline enabled"
+      : "All families outline disabled"
+  );
+};
 
 // Initialize the state based on checkbox
 showRegionOutline = $("#showRegionOutline").checked;
+showAllFamilies = $("#showAllFamilies").checked;
 
 // Experimental section toggle functionality
 let experimentalExpanded = false;
@@ -2987,18 +2998,50 @@ function getRegionOutlinePixels(regionId, width, height) {
   return outlinePixels;
 }
 
+function getAllFamiliesOutlinePixels(width, height) {
+  if (!assignFam) return [];
+
+  const outlinePixels = [];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const p = y * width + x;
+      const fam = assignFam[p];
+      if (fam < 0) continue; // Skip unassigned pixels
+
+      // Check if this pixel is on the edge of its family
+      let isEdge = false;
+
+      // Check left
+      if (x === 0 || assignFam[p - 1] !== fam) isEdge = true;
+      // Check right
+      else if (x === width - 1 || assignFam[p + 1] !== fam) isEdge = true;
+      // Check up
+      else if (y === 0 || assignFam[p - width] !== fam) isEdge = true;
+      // Check down
+      else if (y === height - 1 || assignFam[p + width] !== fam) isEdge = true;
+
+      if (isEdge) {
+        outlinePixels.push({ pixel: p, family: fam });
+      }
+    }
+  }
+  return outlinePixels;
+}
+
 function drawDebug() {
   const showProtected = $("#showDebug").checked;
   const showOutline = showRegionOutline;
+  const showAllOutlines = showAllFamilies;
   const c0 = $("#c0"),
     c1 = $("#c1"),
     d0 = $("#dbg0"),
     d1 = $("#dbg1");
 
-  // Show overlay if either debug mode is enabled
+  // Show overlay if any debug mode is enabled
   const shouldShow =
     (showProtected && pixMask) ||
-    (showOutline && regionIds && selectedRegion >= 0);
+    (showOutline && regionIds && selectedRegion >= 0) ||
+    (showAllOutlines && assignFam);
   d0.style.display = d1.style.display = shouldShow ? "block" : "none";
 
   if (!shouldShow) return;
@@ -3078,6 +3121,73 @@ function drawDebug() {
       A1[i + 1] = 0; // G
       A1[i + 2] = 255; // B
       A1[i + 3] = 220; // A
+    }
+  }
+
+  // Draw all families outline
+  if (showAllOutlines && assignFam) {
+    const allOutlinePixels = getAllFamiliesOutlinePixels(w, h);
+    // Generate distinct colors for each family
+    const familyColors = [];
+    const maxFamilies = Math.max(...assignFam.filter((f) => f >= 0)) + 1;
+
+    for (let f = 0; f < maxFamilies; f++) {
+      const hue = ((f * 360) / maxFamilies) % 360;
+      const saturation = 100;
+      const lightness = 50;
+
+      // Convert HSL to RGB for better color distribution
+      const hueNorm = hue / 60;
+      const c = ((1 - Math.abs((2 * lightness) / 100 - 1)) * saturation) / 100;
+      const x = c * (1 - Math.abs((hueNorm % 2) - 1));
+      const m = lightness / 100 - c / 2;
+
+      let r, g, b;
+      if (hueNorm < 1) {
+        r = c;
+        g = x;
+        b = 0;
+      } else if (hueNorm < 2) {
+        r = x;
+        g = c;
+        b = 0;
+      } else if (hueNorm < 3) {
+        r = 0;
+        g = c;
+        b = x;
+      } else if (hueNorm < 4) {
+        r = 0;
+        g = x;
+        b = c;
+      } else if (hueNorm < 5) {
+        r = x;
+        g = 0;
+        b = c;
+      } else {
+        r = c;
+        g = 0;
+        b = x;
+      }
+
+      familyColors[f] = {
+        r: Math.round((r + m) * 255),
+        g: Math.round((g + m) * 255),
+        b: Math.round((b + m) * 255),
+      };
+    }
+
+    for (const outline of allOutlinePixels) {
+      const i = outline.pixel * 4;
+      const color = familyColors[outline.family] || { r: 255, g: 255, b: 255 };
+
+      A0[i] = color.r;
+      A0[i + 1] = color.g;
+      A0[i + 2] = color.b;
+      A0[i + 3] = 180; // Slightly less opaque than selected outline
+      A1[i] = color.r;
+      A1[i + 1] = color.g;
+      A1[i + 2] = color.b;
+      A1[i + 3] = 180;
     }
   }
 
