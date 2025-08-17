@@ -7,13 +7,13 @@
       name="description"
       content="Create custom shiny Pokémon sprites with advanced color clustering and recoloring algorithms. Professional tool for BDSP modding and Pokémon sprite editing."
     />
-    <meta property="og:title" content="Pokémon Shiny Recolor Tool" />
+    <meta property="og:title" content="Pokémon Recolor Tool" />
     <meta
       property="og:description"
       content="Create custom shiny Pokémon sprites with advanced color clustering and recoloring algorithms."
     />
     <meta property="og:type" content="website" />
-    <title>Pokémon Shiny Recolor Tool - Create Custom Shiny Sprites</title>
+    <title>Pokémon Recolor Tool - Create Custom Sprites</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -302,7 +302,7 @@
               margin-bottom: 8px;
             "
           >
-            <h1 style="margin: 0">Pokémon Shiny Recolor Tool</h1>
+            <h1 style="margin: 0">Pokémon Recolor Tool</h1>
           </div>
           <div
             style="
@@ -361,6 +361,13 @@
                 title="Open the tutorial to learn how to use the tool effectively."
               >
                 Tutorial
+              </button>
+              <button
+                id="aboutBtn"
+                class="btn gray"
+                title="About this tool, contact information, and credits."
+              >
+                About
               </button>
             </div>
           </div>
@@ -907,6 +914,62 @@
     <div id="tutorialModal" class="modal-overlay">
       <div class="sheet-content" id="tutorialContent">
         <!-- Tutorial content will be loaded here -->
+      </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal-overlay">
+      <div class="sheet-content">
+        <div class="row">
+          <h3>About</h3>
+          <button
+            id="closeAboutModal"
+            class="btn gray"
+            title="Close the about dialog."
+          >
+            Close
+          </button>
+        </div>
+        <div class="section">
+          <h4>Pokémon Recolor Tool</h4>
+          <p>
+            A browser-based tool for generating shiny or recolored Pokémon icons and sprites for
+            Brilliant Diamond & Shining Pearl (BDSP) mods. Uses advanced color
+            clustering and CIE LAB color space transformations to automatically
+            recolor Pokémon sprites.
+          </p>
+
+          <h4>Contact</h4>
+          <div class="kv">
+            <label>Discord</label>
+            <span>blubblurp</span>
+            <label>Team Luminescent Discord</label>
+            <a
+              href="http://discord.gg/luminescent"
+              target="_blank"
+              rel="noopener noreferrer"
+              >discord.gg/luminescent</a
+            >
+          </div>
+
+          <h4>Credits</h4>
+          <div class="kv">
+            <label>Original Tool</label>
+            <span>ttin</span>
+            <label>Modified & Maintained By</label>
+            <span>Blupblurp</span>
+            <label>Shiny Icon Contributors</label>
+            <span>realmadrid1809, ttin, darth_pokemon, Heavenly_Experience, puningtilde</span>
+          </div>
+
+          <h4>Resources</h4>
+          <div class="kv">
+            <label>Luminescent Platinum Shiny Icons</label>
+            <a href="#" target="_blank" rel="noopener noreferrer"
+              >[Coming Soon] Complete Icon Collection</a
+            >
+          </div>
+        </div>
       </div>
     </div>
 

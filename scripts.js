@@ -3750,6 +3750,23 @@ $("#tutorialModal").onclick = (e) => {
   }
 };
 
+// About Modal Functions
+function openAboutModal() {
+  $("#aboutModal").style.display = "flex";
+}
+
+$("#aboutBtn").onclick = () => openAboutModal();
+$("#closeAboutModal").onclick = () => {
+  $("#aboutModal").style.display = "none";
+};
+
+// Close about modal when clicking outside the content
+$("#aboutModal").onclick = (e) => {
+  if (e.target === $("#aboutModal")) {
+    $("#aboutModal").style.display = "none";
+  }
+};
+
 applyHKBindings();
 function stepRegion(dir) {
   if (!regions.length) return;
