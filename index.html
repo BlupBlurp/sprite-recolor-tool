@@ -72,7 +72,7 @@
                 min="5"
                 max="48"
                 value="32"
-                title="Number of color families to group similar colors together. Higher values create more distinct color regions."
+                title="Number of color families to group similar colors together. Higher values create more distinct color areas."
               />
             </div>
             <div class="settings-item">
@@ -151,7 +151,7 @@
             <button
               id="recluster"
               class="btn gray small"
-              title="Recalculates color families and regions with current settings. Use after changing Family Count or other clustering parameters."
+              title="Recalculates color families with current settings. Use after changing Family Count or other clustering parameters."
             >
               Recluster
             </button>
@@ -242,9 +242,9 @@
                 ><input
                   id="showRegionOutline"
                   type="checkbox"
-                  title="Shows an outline around the currently selected color region."
+                  title="Shows an outline around the currently selected color family."
                 />
-                Show selected region outline</label
+                Show selected family outline</label
               >
               <label class="toggle"
                 ><input
@@ -479,7 +479,7 @@
       </div>
       <div class="card">
         <fieldset>
-          <legend>Region</legend>
+          <legend>Color Families</legend>
           <div
             style="
               display: flex;
@@ -488,7 +488,7 @@
               margin-bottom: 8px;
             "
           >
-            <h3 id="sheetTitle" style="margin: 0; font-size: 14px">Region</h3>
+            <h3 id="sheetTitle" style="margin: 0; font-size: 14px">Family</h3>
             <label
               for="sheetColor"
               id="pickedSwatch"
@@ -503,7 +503,7 @@
                 transition: all 0.2s ease;
                 position: relative;
               "
-              title="Click to change the color of the selected region."
+              title="Click to change the color of the selected family."
             >
               <input
                 id="sheetColor"
@@ -516,7 +516,7 @@
                   height: 100%;
                   cursor: pointer;
                 "
-                title="Manually set the color for the selected region."
+                title="Manually set the color for the selected family."
               />
             </label>
           </div>
@@ -537,20 +537,20 @@
                 id="sheetLink"
                 type="checkbox"
                 checked
-                title="Link this region to its color family. When linked, individual pixel edits are cleared and the family color is used."
-              /><span>Link to family</span></label
+                title="Use automatic color for this family area. When enabled, individual pixel edits are cleared and the suggested color is used."
+              /><span>Clear pixels</span></label
             >
             <label class="toggle" style="gap: 4px"
               ><input
                 id="sheetKeep"
                 type="checkbox"
-                title="Keep the original colors for this region unchanged."
+                title="Keep the original colors for this family area unchanged."
               /><span>Keep original</span></label
             >
             <button
               id="sheetRevert"
               class="btn gray small"
-              title="Revert this region to its original state or family color, and reset brightness to 0."
+              title="Revert this family area to its original state or suggested color, and reset brightness to 0."
             >
               ↺ Revert
             </button>
@@ -565,7 +565,7 @@
               min="-40"
               max="40"
               value="0"
-              title="Adjust the lightness/darkness of the selected region. Negative values make it darker, positive values make it lighter."
+              title="Adjust the lightness/darkness of the selected family area. Negative values make it darker, positive values make it lighter."
             /><span id="sheetDarkVal" style="font-size: 12px">0</span>
           </div>
 
@@ -611,7 +611,7 @@
                   gap: 2px;
                   white-space: nowrap;
                 "
-                title="Enable individual pixel-level editing instead of region-based editing."
+                title="Enable individual pixel-level editing instead of family-based editing."
               >
                 <input id="pixelLevelMode" type="checkbox" />
                 <span>Individual pixels</span>
@@ -734,7 +734,7 @@
       <div class="sheet-content">
         <div class="row">
           <h3>Hotkey Settings</h3>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px">
             <button
               id="saveHotkeys"
               class="btn"
@@ -779,7 +779,7 @@
               id="hkRecluster"
               type="text"
               placeholder="r"
-              title="Hotkey to recalculate color families and regions."
+              title="Hotkey to recalculate color families."
             />
             <label>Toggle Debug</label
             ><input
@@ -788,12 +788,12 @@
               placeholder="d"
               title="Hotkey to toggle the protected pixel overlay."
             />
-            <label>Toggle Region Outline</label
+            <label>Toggle Family Outline</label
             ><input
               id="hkOutline"
               type="text"
               placeholder="o"
-              title="Hotkey to toggle the selected region outline."
+              title="Hotkey to toggle the selected family outline."
             />
             <label>Pick from Preview</label
             ><input
@@ -814,23 +814,23 @@
               id="hkPickApply"
               type="text"
               placeholder="a"
-              title="Hotkey to enable Pick & Apply mode for applying colors to multiple regions."
+              title="Hotkey to enable Pick & Apply mode for applying colors to multiple families."
             />
-            <label>Prev Region</label
+            <label>Prev Family</label
             ><input
               id="hkPrevReg"
               type="text"
               placeholder="["
-              title="Hotkey to select the previous color region."
+              title="Hotkey to select the previous color family."
             />
-            <label>Next Region</label
+            <label>Next Family</label
             ><input
               id="hkNextReg"
               type="text"
               placeholder="]"
-              title="Hotkey to select the next color region."
+              title="Hotkey to select the next color family."
             />
-            <label>Keep Original (region)</label
+            <label>Keep Original (family)</label
             ><input
               id="hkKeep"
               type="text"

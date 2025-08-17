@@ -965,14 +965,14 @@ let regionDark = {},
 // Track loaded shiny sprite state
 let loadedShinySprite = null;
 let originalSpriteData = null; // Store original sprite image data for "keep original"
-let loadedShinyRegions = null; // Store original region colors for revert
+let loadedShinyRegions = null; // Store original family colors for revert
 let currentFolderSelection = null; // Track current folder selection
 let contrastFactor = 1.1; // 110%
 let colorConsensusCount = 1; // Number of candidates to consider for consensus
 let spatialWeight = 0; // 0-1, weight for spatial similarity in color matching
 let colorTolerance = 0; // 0-1, tolerance for adaptive color thresholds
 let zoomMode = false; // Zoom feature state
-let showRegionOutline = false; // Show selected region outline
+let showRegionOutline = false; // Show selected family outline
 
 /* ===== sliders/toggles ===== */
 $("#k").oninput = (e) => {
@@ -1050,7 +1050,7 @@ $("#showDebug").onchange = (e) => {
 $("#showRegionOutline").onchange = (e) => {
   showRegionOutline = e.target.checked;
   drawDebug();
-  st(e.target.checked ? "Region outline enabled" : "Region outline disabled");
+  st(e.target.checked ? "Family outline enabled" : "Family outline disabled");
 };
 
 // Initialize the state based on checkbox
@@ -1160,7 +1160,7 @@ initializeSeed();
 $("#recluster").onclick = () => {
   if (!sprite) return;
 
-  st("Reclustering regions...");
+  st("Reclustering families...");
 
   // Check if we're in multi-seed preview mode
   const isMultiSeedMode = $("#multiSeedPreview").checked;
@@ -2230,7 +2230,7 @@ function computeFamiliesAndRegions() {
   }
 
   renderPanel();
-  st(`Clustering done — ${regions.length} regions`);
+  st(`Clustering done — ${regions.length} families`);
 }
 
 function recomputeFamilyColorsWithSpatialAwareness() {
@@ -2288,17 +2288,17 @@ function renderPanel() {
   ) {
     openSheet(selectedRegion);
   } else {
-    // No region selected or invalid selection
-    $("#sheetTitle").textContent = "No region selected";
+    // No family selected or invalid selection
+    $("#sheetTitle").textContent = "No family selected";
     $("#pickedSwatch").style.background = "#000";
-    drawDebug(); // Update debug overlay to hide region outline
+    drawDebug(); // Update debug overlay to hide family outline
   }
 }
 function openSheet(rid) {
   selectedRegion = rid;
   const R = regions[rid],
     fam = R.fam;
-  $("#sheetTitle").textContent = `Region #${rid} (Family #${fam + 1})`;
+  $("#sheetTitle").textContent = `Family #${fam + 1} (Area #${rid + 1})`;
   $("#sheetLink").checked = R.linked;
   $("#sheetKeep").checked = R.keep;
   const lab = R.linked || !R.lab ? famShinyLab[fam] : R.lab;
@@ -2665,7 +2665,7 @@ document.getElementById("colorPickAndApply").onclick = () => {
     // Show the individual pixels toggle
     document.getElementById("pixelLevelModeLabel").style.display =
       "inline-flex";
-    renderPanel(); // Update UI to reflect no region selected
+    renderPanel(); // Update UI to reflect no family selected
     st("Apply Multiple mode: Click Original to pick color");
   }
 };
