@@ -382,6 +382,12 @@ function indexFolders() {
   currentFolder = null;
   currentTextures = [];
   currentSpriteFile = null;
+
+  // Clear loaded shiny sprite data when clearing folders
+  loadedShinySprite = null;
+  originalSpriteData = null;
+  loadedShinyRegions = null;
+
   st(`Found ${folders.size} folders`);
 
   // Enable Load Shiny button when folders are available
@@ -3796,6 +3802,12 @@ function autoSelectSpriteForCurrentFolder() {
     const key = sel.value;
     if (!key) {
       currentFolder = null;
+
+      // Clear loaded shiny sprite data when clearing folder selection
+      loadedShinySprite = null;
+      originalSpriteData = null;
+      loadedShinyRegions = null;
+
       document.getElementById("texList").innerHTML = "";
       const ss = document.getElementById("sourceSel");
       if (ss)
@@ -3807,6 +3819,13 @@ function autoSelectSpriteForCurrentFolder() {
     }
     currentFolder = key;
     folderJustChanged = true; // Mark that folder just changed
+
+    // Clear loaded shiny sprite data when changing folders to prevent
+    // "keep original" from using data from previous Pokémon
+    loadedShinySprite = null;
+    originalSpriteData = null;
+    loadedShinyRegions = null;
+
     // refresh texture checkboxes & mapping
     if (typeof renderTextureList === "function") renderTextureList();
     if (typeof updateSelectedTextures === "function") updateSelectedTextures();
