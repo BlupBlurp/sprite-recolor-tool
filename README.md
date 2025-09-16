@@ -4,7 +4,7 @@ A browser-based tool for recoloring sprites using reference textures. Originally
 
 The tool uses advanced color analysis and clustering algorithms that work with any sprite artwork, mapping colors from reference texture pairs to sprite pixels using CIE LAB color space for perceptually accurate results.
 
-Originally created by **ttin**, enhanced and maintained by **Blup**.
+Originally created by **ttin**, enhanced and maintained by **Blup**. (AI assisted)
 
 ## Features
 
@@ -62,4 +62,5 @@ This tool is free to use for personal and community projects. Attribution to the
 ## Credits
 
 - **ttin**
+
 - **Blup**
